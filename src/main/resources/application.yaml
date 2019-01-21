@@ -1,0 +1,6 @@
+management:
+  endpoints:
+    web:
+      exposure:
+        include: info, refresh, health
+      base-path:
