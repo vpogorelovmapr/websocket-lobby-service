@@ -1,4 +1,4 @@
-package tv.weplay.ws.lobby.websocketlobbyservice;
+package tv.weplay.ws.lobby;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
