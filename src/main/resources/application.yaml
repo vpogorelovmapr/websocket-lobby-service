@@ -4,3 +4,16 @@ management:
       exposure:
         include: info, refresh, health
       base-path:
+
+eureka:
+  instance:
+    preferIpAddress: true
+  client:
+    serviceUrl:
+      defaultZone: ${eureka.uri:http://localhost:8761}/eureka/
+    healthcheck:
+      enabled: false
+    register-with-eureka: true
+    fetch-registry: true
+
+
