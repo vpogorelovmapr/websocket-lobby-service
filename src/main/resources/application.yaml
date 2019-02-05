@@ -1,9 +1,29 @@
+spring:
+  rabbitmq:
+    host: 172.16.30.14
+    username: daemon
+    password: Wepl@y-d@Em0n
+    virtual-host: local
+
+rabbitmq:
+  queues:
+    incoming-tournaments-events: tournaments_lobby_create_dev
+    outcoming-tournaments-events: tournaments_lobby_events_dev
+    incoming-ui-events: websocket_in_dev
+    outcoming-ui-events: websocket_out_dev
+
+
 management:
   endpoints:
     web:
       exposure:
         include: info, refresh, health
       base-path:
+
+redis:
+  host: localhost
+  port: 6379
+  password:
 
 eureka:
   instance:
@@ -15,5 +35,13 @@ eureka:
       enabled: false
     register-with-eureka: true
     fetch-registry: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: Websocket lobby Service
+    version: @project.version@
+    artifact: @project.artifactId@
+    messageProtocolVersion: "1"
 
 
