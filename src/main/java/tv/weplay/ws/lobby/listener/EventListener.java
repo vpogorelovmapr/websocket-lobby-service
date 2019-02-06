@@ -27,9 +27,9 @@ public class EventListener {
     private final RabbitMQEventSenderService rabbitMQService;
 
     @SneakyThrows
-    @Scheduled(fixedDelay = 3000)
+    @Scheduled(fixedDelay = 5000)
     public void schedule() {
-        String text = "{\"data\":{\"type\":\"Lobby\",\"id\":\"1\",\"attributes\":{\"duration\":\"120\"}}}";
+        String text = "{\"meta\":{\"type\":\"MatchStatusEvent\",\"sender\":{\"service\":\"websocket-lobby-service\",\"version\":\"0.0.1\"},\"protocol\":{\"version\":\"1\"},\"datetimes\":{\"create_datetime\":\"2019-02-06T18:42:42.317\"}},\"data\":{\"data\":{\"type\":\"Lobby\",\"id\":\"1\",\"attributes\":{\"duration\":\"120\"}}}}";
         rabbitMQService.prepareAndSendEvent(text.getBytes(), rabbitmqQueues.getOutcomingUiEvents(), "MatchStatusEvent");
     }
 
