@@ -52,6 +52,6 @@ public class LobbyServiceImpl implements LobbyService {
     @SneakyThrows
     private void publishToUIChannel(Lobby created) {
         byte[] data = apiConverter.writeObject(created);
-        rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents());
+        rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents(), "MatchStatusEvent");
     }
 }
