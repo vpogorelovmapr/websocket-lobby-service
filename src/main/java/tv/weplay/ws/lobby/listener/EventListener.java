@@ -30,8 +30,7 @@ public class EventListener {
     @Scheduled(fixedDelay = 3000)
     public void schedule() {
         String text = "\"data\":{\"type\":\"Lobby\",\"id\":\"1\",\"attributes\":{\"duration\":\"120\"}}}";
-        byte[] data = converter.writeObject(text.getBytes());
-        rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents(), "MatchStatusEvent");
+        rabbitMQService.prepareAndSendEvent(text.getBytes(), rabbitmqQueues.getOutcomingUiEvents(), "MatchStatusEvent");
     }
 
 //    @RabbitListener(queues = "#{rabbitmqQueues.incomingTournamentsEvents}")
