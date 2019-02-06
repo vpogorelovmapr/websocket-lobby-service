@@ -11,6 +11,7 @@ import tv.weplay.ws.lobby.config.properties.RabbitmqQueues;
 import tv.weplay.ws.lobby.converter.JsonApiConverter;
 import tv.weplay.ws.lobby.model.dto.Event;
 import tv.weplay.ws.lobby.model.dto.Lobby;
+import tv.weplay.ws.lobby.model.dto.events.MatchCreatedEvent;
 import tv.weplay.ws.lobby.service.LobbyService;
 import tv.weplay.ws.lobby.service.impl.RabbitMQEventSenderService;
 
@@ -28,7 +29,7 @@ public class EventListener {
     @Scheduled(fixedDelay = 3000)
     public void schedule() {
         String text = "{\"data\":{\"type\":\"MatchCreatedEvent\",\"id\":\"1\",\"attributes\":{\"lobby_id\":6,\"duration\":\"120\"}}}";
-        Lobby lobby = converter.readDocument(text.getBytes(), Lobby.class).get();
+        MatchCreatedEvent lobby = converter.readDocument(text.getBytes(), MatchCreatedEvent.class).get();
         publishToUIChannel(lobby);
     }
 
@@ -41,8 +42,8 @@ public class EventListener {
     }
 
     @SneakyThrows
-    private void publishToUIChannel(Lobby created) {
-        byte[] data = converter.writeObject(created);
+    private void publishToUIChannel(MatchCreatedEvent event) {
+        byte[] data = converter.writeObject(event);
         rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents());
     }
 }
