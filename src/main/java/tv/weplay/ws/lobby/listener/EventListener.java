@@ -26,11 +26,12 @@ public class EventListener {
     private final RabbitmqQueues rabbitmqQueues;
     private final RabbitMQEventSenderService rabbitMQService;
 
+    @SneakyThrows
     @Scheduled(fixedDelay = 3000)
     public void schedule() {
-        String text = "{\"data\":{\"type\":\"MatchCreatedEvent\",\"id\":\"1\",\"attributes\":{\"lobby_id\":6,\"duration\":\"120\"}}}";
-        MatchCreatedEvent lobby = converter.readDocument(text.getBytes(), MatchCreatedEvent.class).get();
-        publishToUIChannel(lobby);
+        String text = "\"data\":{\"type\":\"Lobby\",\"id\":\"1\",\"attributes\":{\"duration\":\"120\"}}}";
+        byte[] data = converter.writeObject(text.getBytes());
+        rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents(), "MatchStatusEvent");
     }
 
 //    @RabbitListener(queues = "#{rabbitmqQueues.incomingTournamentsEvents}")
@@ -39,11 +40,5 @@ public class EventListener {
         Event event = objectMapper.readValue(rawEvent, Event.class);
         Lobby lobby = converter.readDocument(event.getEventData().toString().getBytes(), Lobby.class).get();
         lobbyService.update(lobby);
-    }
-
-    @SneakyThrows
-    private void publishToUIChannel(MatchCreatedEvent event) {
-        byte[] data = converter.writeObject(event);
-        rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents());
     }
 }
