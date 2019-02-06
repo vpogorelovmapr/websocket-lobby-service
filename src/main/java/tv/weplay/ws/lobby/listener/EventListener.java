@@ -4,14 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import tv.weplay.ws.lobby.config.properties.RabbitmqQueues;
 import tv.weplay.ws.lobby.converter.JsonApiConverter;
 import tv.weplay.ws.lobby.model.dto.Event;
 import tv.weplay.ws.lobby.model.dto.Lobby;
-import tv.weplay.ws.lobby.model.dto.events.MatchCreatedEvent;
 import tv.weplay.ws.lobby.service.LobbyService;
 import tv.weplay.ws.lobby.service.impl.RabbitMQEventSenderService;
 
@@ -29,7 +27,7 @@ public class EventListener {
     @SneakyThrows
     @Scheduled(fixedDelay = 5000)
     public void schedule() {
-        String text = "{\"meta\":{\"type\":\"MatchStatusEvent\",\"sender\":{\"service\":\"websocket-lobby-service\",\"version\":\"0.0.1\"},\"protocol\":{\"version\":\"1\"},\"datetimes\":{\"create_datetime\":\"2019-02-06T18:42:42.317\"}},\"data\":{\"data\":{\"type\":\"Lobby\",\"id\":\"1\",\"attributes\":{\"duration\":\"120\"}}}}";
+        String text = "{\"data\":{\"type\":\"Lobby\",\"id\":\"1\",\"attributes\":{\"duration\":\"120\"}}}";
         rabbitMQService.prepareAndSendEvent(text.getBytes(), rabbitmqQueues.getOutcomingUiEvents(), "MatchStatusEvent");
     }
 

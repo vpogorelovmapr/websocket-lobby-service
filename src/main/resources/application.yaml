@@ -21,9 +21,8 @@ management:
       base-path:
 
 redis:
-  host: localhost
-  port: 6379
-  password:
+  host: 172.16.30.8
+  password: ;De9,tCQ{8nc-Z^gZUG$$j)Z.~5QyN
 
 eureka:
   instance:

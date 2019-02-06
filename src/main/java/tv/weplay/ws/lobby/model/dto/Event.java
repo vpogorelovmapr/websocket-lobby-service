@@ -1,6 +1,7 @@
 package tv.weplay.ws.lobby.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.*;
 
 @Data
@@ -12,5 +13,5 @@ public class Event {
     private EventMetaData eventMetaData;
 
     @JsonProperty("data")
-    private Object eventData;
+    private JsonNode eventData;
 }
