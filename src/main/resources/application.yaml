@@ -4,6 +4,21 @@ spring:
     username: daemon
     password: Wepl@y-d@Em0n
     virtual-host: local
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/lobby_dev
+    username: lobby_user
+    password: DygrEtipVq
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL5InnoDBDialect
+    hibernate:
+      ddl-auto: validate
+  quartz:
+    job-store-type: jdbc
+    properties:
+      org.quartz.threadPool.threadCount: 10
 
 rabbitmq:
   queues:

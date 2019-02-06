@@ -33,7 +33,7 @@ public class LobbyServiceImpl implements LobbyService {
         LobbyEntity createdEntity = lobbyRepository.save(entity);
         Lobby created = lobbyMapper.toDTO(createdEntity);
         log.info("Updated lobby {}", lobby);
-        publishEventToChannel(created);
+        publishEventToRabbitMQ(created);
         return created;
     }
 
@@ -54,7 +54,7 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     @SneakyThrows
-    private void publishEventToChannel(Lobby created) {
+    private void publishEventToRabbitMQ(Lobby created) {
         Lobby event = buildLobby(created.getDuration(), LobbyStatus.ONGOING);
         byte[] data = apiConverter.writeObject(event);
         rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents(), EventTypes.MATCH_STATUS_EVENT);
