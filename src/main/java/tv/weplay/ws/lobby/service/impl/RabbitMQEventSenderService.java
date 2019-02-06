@@ -16,7 +16,6 @@ import tv.weplay.ws.lobby.service.EventSenderService;
 @RequiredArgsConstructor
 public class RabbitMQEventSenderService implements EventSenderService {
 
-  private static final String EVENT_TYPE = "EVENT_TYPE";
   private static final String DEFAULT_EXCHANGE = "";
 
   private final RabbitTemplate rabbitTemplate;
