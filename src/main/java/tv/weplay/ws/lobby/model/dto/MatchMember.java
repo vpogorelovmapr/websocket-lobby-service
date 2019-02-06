@@ -17,8 +17,6 @@ public class MatchMember {
 
     private MemberStatus status;
 
-    private UserStatus role;
-
     @JsonProperty("participation_type")
     private String participationType;
 
