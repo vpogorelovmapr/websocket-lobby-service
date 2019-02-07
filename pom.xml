@@ -18,7 +18,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
-        <flyway.version>1.8</flyway.version>
+        <flyway.version>5.2.1</flyway.version>
         <spring-cloud.version>Greenwich.RELEASE</spring-cloud.version>
     </properties>
 
