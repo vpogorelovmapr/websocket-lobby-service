@@ -27,7 +27,7 @@ public class EventListener {
     @SneakyThrows
     @Scheduled(fixedDelay = 5000)
     public void schedule() {
-        String text = "{\"data\":{\"type\":\"Lobby\",\"id\":\"1\",\"attributes\":{\"duration\":\"120\"}}}";
+        String text = "{\"data\":{\"type\":\"Lobby\",\"id\":\"1\",\"attributes\":{\"duration\":\"120\", \"status\":\"UPCOMING\"}}}";
         rabbitMQService.prepareAndSendEvent(text.getBytes(), rabbitmqQueues.getOutcomingUiEvents(), "MatchStatusEvent");
     }
 
