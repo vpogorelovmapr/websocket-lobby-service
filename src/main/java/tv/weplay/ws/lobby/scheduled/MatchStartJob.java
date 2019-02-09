@@ -57,7 +57,6 @@ public class MatchStartJob extends QuartzJobBean {
     private Lobby buildLobbyEvent(Lobby lobby) {
         return Lobby.builder()
                 .id(lobby.getId())
-                .duration(lobby.getDuration())
                 .status(lobby.getStatus())
                 .build();
     }

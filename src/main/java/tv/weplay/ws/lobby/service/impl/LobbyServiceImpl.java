@@ -94,7 +94,7 @@ public class LobbyServiceImpl implements LobbyService {
     private void scheduleStartMatchJob(Lobby lobby) {
         JobDataMap dataMap = new JobDataMap();
         dataMap.put(LOBBY_ID, lobby.getId());
-        schedulerHelper.schedule(UUID.randomUUID().toString(), MATCH_START_GROUP, ZonedDateTime.now().plusSeconds(30),
-                dataMap, MatchStartJob.class);
+        schedulerHelper.schedule(UUID.randomUUID().toString(), MATCH_START_GROUP,
+                ZonedDateTime.now().plusSeconds(lobby.getDuration()), dataMap, MatchStartJob.class);
     }
 }
