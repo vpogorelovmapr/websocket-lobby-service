@@ -47,17 +47,18 @@ public class MatchStartJob extends QuartzJobBean {
 
     @SneakyThrows
     private void publishEventToRabbitMQ(Lobby lobby) {
-        Lobby event = buildLobby(lobby.getDuration(), lobby.getStatus());
+        Lobby event = buildLobbyEvent(lobby);
         byte[] data = converter.writeObject(event);
         rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents(), EventTypes.MATCH_STATUS_EVENT);
         rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingTournamentsEvents(),
                 EventTypes.MATCH_STATUS_EVENT);
     }
 
-    private Lobby buildLobby(Long duration, LobbyStatus status) {
+    private Lobby buildLobbyEvent(Lobby lobby) {
         return Lobby.builder()
-                .duration(duration)
-                .status(status)
+                .id(lobby.getId())
+                .duration(lobby.getDuration())
+                .status(lobby.getStatus())
                 .build();
     }
 }

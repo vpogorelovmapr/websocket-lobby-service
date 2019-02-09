@@ -78,15 +78,16 @@ public class LobbyServiceImpl implements LobbyService {
     @SneakyThrows
     private void publishEventToRabbitMQ(Lobby lobby) {
         log.info("Publishing event to rabbitMQ {}", lobby);
-        Lobby event = buildLobby(lobby.getLobbyStartDatetime(), lobby.getStatus());
+        Lobby event = buildLobbyEvent(lobby);
         byte[] data = apiConverter.writeObject(event);
         rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents(), EventTypes.MATCH_STATUS_EVENT);
     }
 
-    private Lobby buildLobby(LocalDateTime time, LobbyStatus status) {
+    private Lobby buildLobbyEvent(Lobby lobby) {
         return Lobby.builder()
-                .lobbyStartDatetime(time)
-                .status(status)
+                .id(lobby.getId())
+                .lobbyStartDatetime(lobby.getLobbyStartDatetime())
+                .status(lobby.getStatus())
                 .build();
     }
 
