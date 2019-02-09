@@ -22,6 +22,7 @@ public class LobbyMapperImpl implements LobbyMapper {
                 .status(lobbyEntity.getStatus())
                 .match(lobbyEntity.getMatch())
                 .lobbyMap(lobbyEntity.getLobbyMap())
+                .lobbyStartDatetime(lobbyEntity.getLobbyStartDatetime())
                 .build();
     }
 
@@ -37,6 +38,7 @@ public class LobbyMapperImpl implements LobbyMapper {
                 .status(lobbyDTO.getStatus())
                 .match(lobbyDTO.getMatch())
                 .lobbyMap(lobbyDTO.getLobbyMap())
+                .lobbyStartDatetime(lobbyDTO.getLobbyStartDatetime())
                 .build();
     }
 

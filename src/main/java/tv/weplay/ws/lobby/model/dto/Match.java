@@ -6,6 +6,7 @@ import com.github.jasminb.jsonapi.annotations.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Data
 @Builder(toBuilder = true)
@@ -37,5 +38,8 @@ public class Match {
 
     @Relationship("node")
     private Node node;
+
+    @Relationship("members")
+    private List<MatchMember> members;
 
 }

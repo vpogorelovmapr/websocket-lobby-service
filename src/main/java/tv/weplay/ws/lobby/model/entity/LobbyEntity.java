@@ -5,6 +5,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
 import tv.weplay.ws.lobby.model.dto.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Data
@@ -24,6 +25,8 @@ public class LobbyEntity {
     private Settings settings;
 
     private Match match;
+
+    private LocalDateTime lobbyStartDatetime;
 
     private List<LobbyMap> lobbyMap;
 }

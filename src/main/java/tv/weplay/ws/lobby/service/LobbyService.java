@@ -6,6 +6,8 @@ import java.util.List;
 
 public interface LobbyService {
 
+    Lobby create(Lobby lobby);
+
     Lobby update(Lobby lobby);
 
     void delete(Long id);
