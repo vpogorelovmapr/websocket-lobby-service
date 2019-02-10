@@ -23,6 +23,17 @@ services:
         aliases:
           - redis
 
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+    - "8080:15672"
+    - "5672:5672"
+    - "5671:5671"
+    environment:
+      RABBITMQ_DEFAULT_PASS: Wepl@y-d@Em0n
+      RABBITMQ_DEFAULT_USER: daemon
+      RABBITMQ_DEFAULT_VHOST: local
+
   eureka-service:
     image: weplayregistrytest.azurecr.io/eureka-service:1.10.35
     environment:

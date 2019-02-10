@@ -1,6 +1,6 @@
 spring:
   rabbitmq:
-    host: 172.16.30.14
+    host: localhost
     username: daemon
     password: Wepl@y-d@Em0n
     virtual-host: local
