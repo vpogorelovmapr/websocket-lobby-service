@@ -10,7 +10,6 @@ import tv.weplay.ws.lobby.config.properties.RabbitmqQueues;
 import tv.weplay.ws.lobby.converter.JsonApiConverter;
 import tv.weplay.ws.lobby.mapper.LobbyMapper;
 import tv.weplay.ws.lobby.model.dto.Lobby;
-import tv.weplay.ws.lobby.model.dto.LobbyStatus;
 import tv.weplay.ws.lobby.model.entity.LobbyEntity;
 import tv.weplay.ws.lobby.repository.LobbyRepository;
 import tv.weplay.ws.lobby.scheduled.MatchStartJob;
@@ -40,7 +39,6 @@ public class LobbyServiceImpl implements LobbyService {
     @Override
     public Lobby create(Lobby lobby) {
         LobbyEntity entity = lobbyMapper.toEntity(lobby);
-        entity.setStatus(LobbyStatus.ONGOING);
         entity.setLobbyStartDatetime(LocalDateTime.now());
         LobbyEntity createdEntity = lobbyRepository.save(entity);
         Lobby created = lobbyMapper.toDTO(createdEntity);
