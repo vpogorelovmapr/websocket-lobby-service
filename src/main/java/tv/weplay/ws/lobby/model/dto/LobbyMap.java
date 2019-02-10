@@ -5,6 +5,7 @@ import com.github.jasminb.jsonapi.annotations.*;
 import lombok.*;
 
 @Data
+@ToString(exclude = "lobby")
 @Type("LobbyMap")
 @Builder(toBuilder = true)
 @NoArgsConstructor
@@ -18,6 +19,12 @@ public class LobbyMap {
 
     private LobbyMapStatus status;
 
+    @Relationship("map")
+    private VoteItem voteItem;
+
     @Relationship("member")
     private Member member;
+
+    @Relationship("lobby")
+    private Lobby lobby;
 }

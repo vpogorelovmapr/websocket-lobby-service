@@ -24,9 +24,9 @@ public class LobbyEntity {
 
     private Settings settings;
 
-    private Match match;
+    private MatchEntity match;
 
     private LocalDateTime lobbyStartDatetime;
 
-    private List<LobbyMap> lobbyMap;
+    private List<LobbyMapEntity> lobbyMap;
 }

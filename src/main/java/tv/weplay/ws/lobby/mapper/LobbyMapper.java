@@ -7,9 +7,9 @@ import java.util.List;
 
 public interface LobbyMapper {
 
-    Lobby toDTO(LobbyEntity userDTO);
+    Lobby toDTO(LobbyEntity entity);
 
-    LobbyEntity toEntity(Lobby userDTO);
+    LobbyEntity toEntity(Lobby dto);
 
-    List<Lobby> toDTOs(List<LobbyEntity> lobbies);
+    List<Lobby> toDTOs(List<LobbyEntity> entities);
 }

@@ -1,17 +1,16 @@
-package tv.weplay.ws.lobby.model.dto;
+package tv.weplay.ws.lobby.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.jasminb.jsonapi.LongIdHandler;
 import com.github.jasminb.jsonapi.annotations.*;
 import lombok.*;
+import tv.weplay.ws.lobby.model.dto.*;
 
 @Data
-@ToString(exclude = "lobby")
-@Type("MatchMember")
 @Builder(toBuilder = true)
 @NoArgsConstructor
 @AllArgsConstructor
-public class MatchMember {
+public class MatchMemberEntity {
 
     @Id(LongIdHandler.class)
     private Long id;
@@ -26,7 +25,4 @@ public class MatchMember {
 
     @Relationship("member")
     private Member member;
-
-    @Relationship("lobby")
-    private Lobby lobby;
 }
