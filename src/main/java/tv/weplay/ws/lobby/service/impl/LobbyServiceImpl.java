@@ -13,8 +13,8 @@ import tv.weplay.ws.lobby.model.dto.*;
 import tv.weplay.ws.lobby.model.entity.LobbyEntity;
 import tv.weplay.ws.lobby.repository.LobbyRepository;
 import tv.weplay.ws.lobby.scheduled.MatchStartJob;
-import tv.weplay.ws.lobby.scheduled.SchedulerHelper;
 import tv.weplay.ws.lobby.service.LobbyService;
+import tv.weplay.ws.lobby.service.SchedulerService;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
@@ -22,7 +22,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static tv.weplay.ws.lobby.scheduled.MatchStartJob.LOBBY_ID;
-import static tv.weplay.ws.lobby.scheduled.SchedulerHelper.MATCH_START_GROUP;
+import static tv.weplay.ws.lobby.service.impl.SchedulerServiceImpl.MATCH_START_GROUP;
 
 @Slf4j
 @Service
@@ -34,7 +34,7 @@ public class LobbyServiceImpl implements LobbyService {
     private final RabbitMQEventSenderService rabbitMQService;
     private final RabbitmqQueues rabbitmqQueues;
     private final JsonApiConverter apiConverter;
-    private final SchedulerHelper schedulerHelper;
+    private final SchedulerService schedulerService;
 
     @Override
     public Lobby create(Lobby lobby) {
@@ -167,7 +167,7 @@ public class LobbyServiceImpl implements LobbyService {
     private void scheduleStartMatchJob(Lobby lobby) {
         JobDataMap dataMap = new JobDataMap();
         dataMap.put(LOBBY_ID, lobby.getId());
-        schedulerHelper.schedule(UUID.randomUUID().toString(), MATCH_START_GROUP,
+        schedulerService.schedule(UUID.randomUUID().toString(), MATCH_START_GROUP,
                 ZonedDateTime.now().plusSeconds(lobby.getDuration()), dataMap, MatchStartJob.class);
     }
 

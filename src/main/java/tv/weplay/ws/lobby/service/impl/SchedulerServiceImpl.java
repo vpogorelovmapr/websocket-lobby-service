@@ -1,16 +1,18 @@
-package tv.weplay.ws.lobby.scheduled;
+package tv.weplay.ws.lobby.service.impl;
 
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.quartz.*;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
+import tv.weplay.ws.lobby.service.SchedulerService;
 
 import java.time.ZonedDateTime;
 import java.util.Date;
 
-@Component
+@Service
 @RequiredArgsConstructor
-public class SchedulerHelper {
+public class SchedulerServiceImpl implements SchedulerService {
 
     public static final String MATCH_START_GROUP = "match-start-group";
     public static final String VOTE_GROUP = "vote-group";

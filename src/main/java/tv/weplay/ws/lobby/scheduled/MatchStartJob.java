@@ -12,11 +12,13 @@ import tv.weplay.ws.lobby.config.properties.RabbitmqQueues;
 import tv.weplay.ws.lobby.converter.JsonApiConverter;
 import tv.weplay.ws.lobby.model.dto.*;
 import tv.weplay.ws.lobby.service.LobbyService;
+import tv.weplay.ws.lobby.service.SchedulerService;
 import tv.weplay.ws.lobby.service.impl.RabbitMQEventSenderService;
 
 import java.time.ZonedDateTime;
 
-import static tv.weplay.ws.lobby.scheduled.SchedulerHelper.*;
+import static tv.weplay.ws.lobby.service.impl.SchedulerServiceImpl.VOTE_GROUP;
+import static tv.weplay.ws.lobby.service.impl.SchedulerServiceImpl.VOTE_PREFIX;
 
 @Slf4j
 @Component
@@ -29,7 +31,7 @@ public class MatchStartJob extends QuartzJobBean {
     private final RabbitMQEventSenderService rabbitMQService;
     private final JsonApiConverter converter;
     private final RabbitmqQueues rabbitmqQueues;
-    private final SchedulerHelper schedulerHelper;
+    private final SchedulerService schedulerService;
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) {
@@ -75,7 +77,7 @@ public class MatchStartJob extends QuartzJobBean {
     private void scheduleVoteJob(Long lobbyId) {
         JobDataMap dataMap = new JobDataMap();
         dataMap.put(LOBBY_ID, lobbyId);
-        schedulerHelper.schedule(VOTE_PREFIX + lobbyId, VOTE_GROUP, ZonedDateTime.now().plusSeconds(15), dataMap, 15,
+        schedulerService.schedule(VOTE_PREFIX + lobbyId, VOTE_GROUP, ZonedDateTime.now().plusSeconds(15), dataMap, 15,
                 VoteJob.class);
     }
 }
