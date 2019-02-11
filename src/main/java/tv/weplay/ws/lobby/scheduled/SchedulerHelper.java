@@ -13,6 +13,8 @@ import java.util.Date;
 public class SchedulerHelper {
 
     public static final String MATCH_START_GROUP = "match-start-group";
+    public static final String VOTE_GROUP = "vote-group";
+    public static final String VOTE_PREFIX = "vote_";
 
     private final Scheduler scheduler;
 
@@ -22,15 +24,21 @@ public class SchedulerHelper {
     }
 
     @SneakyThrows
-    public void schedule(String identity, String jobGroup, ZonedDateTime startAt, JobDataMap map, String cronExpression,
+    public void schedule(String identity, String jobGroup, ZonedDateTime startAt, JobDataMap map, Integer interval,
                          Class<? extends Job> jobClass) {
         JobDetail jobDetail = buildJobDetail(identity, jobGroup, map, jobClass);
-        Trigger trigger = buildJobTrigger(jobDetail, startAt, cronExpression);
+        Trigger trigger = buildJobTrigger(jobDetail, startAt, interval);
         scheduler.scheduleJob(jobDetail, trigger);
     }
 
-    private Trigger buildJobTrigger(JobDetail jobDetail, ZonedDateTime startAt, String cronExpression) {
-        ScheduleBuilder<?> scheduleBuilder = cronExpression != null ? CronScheduleBuilder.cronSchedule(cronExpression) :
+    @SneakyThrows
+    public void unschedule(String identity, String group) {
+        scheduler.deleteJob(new JobKey(identity, group));
+        scheduler.unscheduleJob(new TriggerKey(identity, group));
+    }
+
+    private Trigger buildJobTrigger(JobDetail jobDetail, ZonedDateTime startAt, Integer interval) {
+        ScheduleBuilder<?> scheduleBuilder = interval != null ? SimpleScheduleBuilder.repeatSecondlyForever(interval) :
                 SimpleScheduleBuilder.simpleSchedule().withMisfireHandlingInstructionFireNow();
         return TriggerBuilder.newTrigger()
                 .forJob(jobDetail)

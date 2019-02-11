@@ -15,4 +15,10 @@ public interface LobbyService {
     Lobby findById(Long id);
 
     List<Lobby> findAll();
+
+    void voteRandomCard(Long id);
+
+    void voteCard(Long lobbyId, Long cardId);
+
+    boolean isLastVote(Lobby lobby);
 }

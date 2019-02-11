@@ -53,6 +53,11 @@ public class MatchMemberMapperImpl implements MatchMemberMapper {
 
     @Override
     public List<MatchMemberEntity> toEntities(List<MatchMember> dtos) {
-        return null;
+        if (dtos == null) {
+            return null;
+        }
+        return dtos.stream()
+                .map(this::toEntity)
+                .collect(Collectors.toList());
     }
 }

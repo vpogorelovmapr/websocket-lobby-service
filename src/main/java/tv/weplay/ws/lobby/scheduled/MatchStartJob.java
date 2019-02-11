@@ -3,7 +3,8 @@ package tv.weplay.ws.lobby.scheduled;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import org.quartz.*;
+import org.quartz.JobDataMap;
+import org.quartz.JobExecutionContext;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
 import tv.weplay.ws.lobby.common.EventTypes;
@@ -12,6 +13,10 @@ import tv.weplay.ws.lobby.converter.JsonApiConverter;
 import tv.weplay.ws.lobby.model.dto.*;
 import tv.weplay.ws.lobby.service.LobbyService;
 import tv.weplay.ws.lobby.service.impl.RabbitMQEventSenderService;
+
+import java.time.ZonedDateTime;
+
+import static tv.weplay.ws.lobby.scheduled.SchedulerHelper.*;
 
 @Slf4j
 @Component
@@ -24,6 +29,7 @@ public class MatchStartJob extends QuartzJobBean {
     private final RabbitMQEventSenderService rabbitMQService;
     private final JsonApiConverter converter;
     private final RabbitmqQueues rabbitmqQueues;
+    private final SchedulerHelper schedulerHelper;
 
     @Override
     protected void executeInternal(JobExecutionContext jobExecutionContext) {
@@ -37,6 +43,10 @@ public class MatchStartJob extends QuartzJobBean {
         lobby.setStatus(status);
         lobbyService.update(lobby);
         publishEventToRabbitMQ(lobby);
+
+        if (status.equals(LobbyStatus.ONGOING)) {
+            scheduleVoteJob(lobbyId);
+        }
     }
 
     private boolean allMatchMemberPresent(Lobby lobby) {
@@ -59,5 +69,12 @@ public class MatchStartJob extends QuartzJobBean {
                 .id(lobby.getId())
                 .status(lobby.getStatus())
                 .build();
+    }
+
+    private void scheduleVoteJob(Long lobbyId) {
+        JobDataMap dataMap = new JobDataMap();
+        dataMap.put(LOBBY_ID, lobbyId);
+        schedulerHelper.schedule(VOTE_PREFIX + lobbyId, VOTE_GROUP, ZonedDateTime.now().plusSeconds(15), dataMap, 15,
+                VoteJob.class);
     }
 }

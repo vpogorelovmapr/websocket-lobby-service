@@ -9,7 +9,7 @@ import tv.weplay.ws.lobby.common.EventTypes;
 import tv.weplay.ws.lobby.config.properties.RabbitmqQueues;
 import tv.weplay.ws.lobby.converter.JsonApiConverter;
 import tv.weplay.ws.lobby.mapper.LobbyMapper;
-import tv.weplay.ws.lobby.model.dto.Lobby;
+import tv.weplay.ws.lobby.model.dto.*;
 import tv.weplay.ws.lobby.model.entity.LobbyEntity;
 import tv.weplay.ws.lobby.repository.LobbyRepository;
 import tv.weplay.ws.lobby.scheduled.MatchStartJob;
@@ -18,8 +18,8 @@ import tv.weplay.ws.lobby.service.LobbyService;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static tv.weplay.ws.lobby.scheduled.MatchStartJob.LOBBY_ID;
 import static tv.weplay.ws.lobby.scheduled.SchedulerHelper.MATCH_START_GROUP;
@@ -73,12 +73,47 @@ public class LobbyServiceImpl implements LobbyService {
         return lobbyMapper.toDTOs(lobbyRepository.findAll());
     }
 
+    @Override
+    public void voteRandomCard(Long lobbyId) {
+        Lobby lobby = findById(lobbyId);
+        Long cardId = getRandomCardId(lobby);
+        voteCard(lobby.getId(), cardId);
+    }
+
+    @Override
+    public void voteCard(Long lobbyId, Long cardId) {
+        Lobby lobby = findById(lobbyId);
+        Optional<LobbyMap> lobbyMap = getNextLobbyMap(lobby);
+        lobbyMap.ifPresent(map -> {
+            map.setVoteItem(new VoteItem(cardId));
+            Lobby updated = update(lobby);
+            publishEventToRabbitMQ(map, lobbyId);
+        });
+    }
+
+    @Override
+    public boolean isLastVote(Lobby lobby) {
+        return lobby.getLobbyMap().stream()
+                .map(LobbyMap::getVoteItem)
+                .filter(Objects::nonNull)
+                .count() == 1;
+    }
+
     @SneakyThrows
     private void publishEventToRabbitMQ(Lobby lobby) {
         log.info("Publishing event to rabbitMQ {}", lobby);
         Lobby event = buildLobbyEvent(lobby);
         byte[] data = apiConverter.writeObject(event);
         rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents(), EventTypes.MATCH_STATUS_EVENT);
+    }
+
+    @SneakyThrows
+    private void publishEventToRabbitMQ(LobbyMap map, Long lobbyId) {
+        log.info("Publishing event to rabbitMQ {}", map);
+        LobbyMap event = buildLobbyMapEvent(map, lobbyId);
+        byte[] data = apiConverter.writeObject(event);
+        rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents(), EventTypes.VOTE_EVENT);
+        rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingTournamentsEvents(), EventTypes.VOTE_EVENT);
     }
 
     private Lobby buildLobbyEvent(Lobby lobby) {
@@ -89,10 +124,41 @@ public class LobbyServiceImpl implements LobbyService {
                 .build();
     }
 
+    private LobbyMap buildLobbyMapEvent(LobbyMap map, Long lobbyId) {
+        return LobbyMap.builder()
+                .id(map.getId())
+                .lobby(Lobby.builder().id(lobbyId).build())
+                .voteItem(map.getVoteItem())
+                .build();
+    }
+
     private void scheduleStartMatchJob(Lobby lobby) {
         JobDataMap dataMap = new JobDataMap();
         dataMap.put(LOBBY_ID, lobby.getId());
         schedulerHelper.schedule(UUID.randomUUID().toString(), MATCH_START_GROUP,
-                ZonedDateTime.now().plusSeconds(lobby.getDuration()), dataMap, MatchStartJob.class);
+                ZonedDateTime.now().plusSeconds(20), dataMap, MatchStartJob.class);
     }
+
+    private Long getRandomCardId(Lobby lobby) {
+        List<Long> pickedCardIds = getPickedCardIds(lobby);
+        List<Long> votePool = new ArrayList<>(lobby.getSettings().getVotePool());
+        votePool.removeAll(pickedCardIds);
+        int index = (int) (Math.random() % (pickedCardIds.size() - 1));
+        return votePool.get(index);
+    }
+
+    private List<Long> getPickedCardIds(Lobby lobby) {
+        return lobby.getLobbyMap().stream()
+                .map(LobbyMap::getVoteItem)
+                .filter(Objects::nonNull)
+                .map(VoteItem::getId)
+                .collect(Collectors.toList());
+    }
+
+    private Optional<LobbyMap> getNextLobbyMap(Lobby lobby) {
+        return lobby.getLobbyMap().stream()
+                .filter(map -> Objects.isNull(map.getVoteItem()))
+                .findFirst();
+    }
+
 }
