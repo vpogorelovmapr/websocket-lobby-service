@@ -34,9 +34,9 @@ public class RabbitMQEventSenderService implements EventSenderService {
     @Override
     public void prepareAndSendEvent(String data, String queueName, String type) {
         String payload = buildRabbitMQEvent(data, type);
-        log.info("Event to be sent: [{}]", payload);
+        log.trace("Event to be sent: [{}]", payload);
         rabbitTemplate.convertAndSend(DEFAULT_EXCHANGE, queueName, payload);
-        log.info("Message that has been successfully sent: [{}]", payload);
+        log.trace("Message that has been successfully sent: [{}]", payload);
     }
 
     @Override
