@@ -40,9 +40,11 @@ public class MatchStartJob extends QuartzJobBean {
         Lobby lobby = lobbyService.findById(lobbyId);
 
         LobbyStatus status = allMatchMemberPresent(lobby) ? LobbyStatus.ONGOING : LobbyStatus.CANCELED;
+        String type = status.equals(LobbyStatus.ONGOING) ? EventTypes.MATCH_STARTED_EVENT : EventTypes.MATCH_CANCELED_EVENT;
         lobby.setStatus(status);
         lobbyService.update(lobby);
-        publishEventToRabbitMQ(lobby);
+
+        publishEventToRabbitMQ(lobby, type);
 
         if (status.equals(LobbyStatus.ONGOING)) {
             scheduleVoteJob(lobbyId);
@@ -56,12 +58,12 @@ public class MatchStartJob extends QuartzJobBean {
     }
 
     @SneakyThrows
-    private void publishEventToRabbitMQ(Lobby lobby) {
+    private void publishEventToRabbitMQ(Lobby lobby, String type) {
         Lobby event = buildLobbyEvent(lobby);
         byte[] data = converter.writeObject(event);
-        rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents(), EventTypes.MATCH_STATUS_EVENT);
+        rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents(), type);
         rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingTournamentsEvents(),
-                EventTypes.MATCH_STATUS_EVENT);
+                type);
     }
 
     private Lobby buildLobbyEvent(Lobby lobby) {

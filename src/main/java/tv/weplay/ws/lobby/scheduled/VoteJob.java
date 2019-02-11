@@ -35,6 +35,8 @@ public class VoteJob extends QuartzJobBean {
         if (lobbyService.isLastVote(lobby)) {
             lobbyService.voteRandomCard(lobbyId);
             schedulerHelper.unschedule(VOTE_PREFIX + lobbyId, VOTE_GROUP);
+
+            //TODO: Send END event
         }
     }
 }
