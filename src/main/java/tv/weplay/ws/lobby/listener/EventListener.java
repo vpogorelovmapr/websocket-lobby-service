@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import tv.weplay.ws.lobby.common.EventTypes;
@@ -41,12 +42,15 @@ public class EventListener {
     }
 
 //    @RabbitListener(queues = "#{rabbitmqQueues.incomingUiEvents}")
-    public void handleUIEvent(byte[] rawEvent) throws Exception {
+    public void handleUIEvent(byte[] rawEvent, @Header("Authorization") String authhorization) throws Exception {
         log.info("Raw event received: {}", new String(rawEvent));
         Event event = objectMapper.readValue(rawEvent, Event.class);
         if (event.getEventMetaData().getType().equals(EventTypes.MEMBER_EVENT)) {
             MatchMember member = converter.readDocument(event.getEventData().toString().getBytes(), MatchMember.class).get();
             lobbyService.updateMemberStatus(member.getLobby().getId(), member.getId());
+        } else if (event.getEventMetaData().getType().equals(EventTypes.VOTE_EVENT)) {
+            LobbyMap map = converter.readDocument(event.getEventData().toString().getBytes(), LobbyMap.class).get();
+            lobbyService.voteCard(map.getLobby().getId(), map.getVoteItem().getId(), LobbyMapType.USER_PICK);
         }
     }
 }

@@ -7,6 +7,7 @@ import org.quartz.JobExecutionContext;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
 import tv.weplay.ws.lobby.model.dto.Lobby;
+import tv.weplay.ws.lobby.model.dto.LobbyMapType;
 import tv.weplay.ws.lobby.service.LobbyService;
 
 import static tv.weplay.ws.lobby.scheduled.SchedulerHelper.VOTE_GROUP;
@@ -17,7 +18,7 @@ import static tv.weplay.ws.lobby.scheduled.SchedulerHelper.VOTE_PREFIX;
 @RequiredArgsConstructor
 public class VoteJob extends QuartzJobBean {
 
-    public static final String LOBBY_ID = "lobbyId";
+    private static final String LOBBY_ID = "lobbyId";
 
     private final LobbyService lobbyService;
     private final SchedulerHelper schedulerHelper;
@@ -30,10 +31,10 @@ public class VoteJob extends QuartzJobBean {
         Long lobbyId = jobDataMap.getLong(LOBBY_ID);
         Lobby lobby = lobbyService.findById(lobbyId);
 
-        lobbyService.voteRandomCard(lobbyId);
+        lobbyService.voteRandomCard(lobbyId, LobbyMapType.SERVER_PICK_TIMEOUT);
 
         if (lobbyService.isLastVote(lobby)) {
-            lobbyService.voteRandomCard(lobbyId);
+            lobbyService.voteRandomCard(lobbyId, LobbyMapType.SERVER_PICK);
             schedulerHelper.unschedule(VOTE_PREFIX + lobbyId, VOTE_GROUP);
 
             //TODO: Send END event

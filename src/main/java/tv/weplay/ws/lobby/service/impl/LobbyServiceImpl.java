@@ -88,18 +88,19 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     @Override
-    public void voteRandomCard(Long lobbyId) {
+    public void voteRandomCard(Long lobbyId, LobbyMapType type) {
         Lobby lobby = findById(lobbyId);
         Long cardId = getRandomCardId(lobby);
-        voteCard(lobby.getId(), cardId);
+        voteCard(lobby.getId(), cardId, type);
     }
 
     @Override
-    public void voteCard(Long lobbyId, Long cardId) {
+    public void voteCard(Long lobbyId, Long cardId, LobbyMapType type) {
         Lobby lobby = findById(lobbyId);
         Optional<LobbyMap> lobbyMap = getNextLobbyMap(lobby);
         lobbyMap.ifPresent(map -> {
             map.setVoteItem(new VoteItem(cardId));
+            map.setStatus(type);
             update(lobby);
             publishEventToRabbitMQ(map, lobbyId);
         });

@@ -1,6 +1,6 @@
 package tv.weplay.ws.lobby.service;
 
-import tv.weplay.ws.lobby.model.dto.Lobby;
+import tv.weplay.ws.lobby.model.dto.*;
 
 import java.util.List;
 
@@ -18,9 +18,9 @@ public interface LobbyService {
 
     void updateMemberStatus(Long lobbyId, Long memberId);
 
-    void voteRandomCard(Long id);
+    void voteRandomCard(Long id, LobbyMapType type);
 
-    void voteCard(Long lobbyId, Long cardId);
+    void voteCard(Long lobbyId, Long cardId, LobbyMapType type);
 
     boolean isLastVote(Lobby lobby);
 }
