@@ -40,7 +40,7 @@ public class EventListener {
         lobbyService.create(lobby);
     }
 
-    @RabbitListener(queues = "#{rabbitmqQueues.incomingUiEvents}")
+//    @RabbitListener(queues = "#{rabbitmqQueues.incomingUiEvents}")
     public void handleUIEvent(byte[] rawEvent) throws Exception {
         log.info("Raw event received: {}", new String(rawEvent));
         Event event = objectMapper.readValue(rawEvent, Event.class);
