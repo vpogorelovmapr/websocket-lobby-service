@@ -14,7 +14,7 @@ public class Settings {
     private List<Long> votePool;
 
     @JsonProperty("vote_time")
-    private Long voteTime;
+    private Integer voteTime;
 
     @JsonProperty("start_date")
     private String startDate;

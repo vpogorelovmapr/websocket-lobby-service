@@ -37,7 +37,7 @@ public class EventListener {
     public void handleLobbyCreationEvent(byte[] rawEvent) throws Exception {
         log.info("Raw event received: {}", new String(rawEvent));
         Event event = objectMapper.readValue(rawEvent, Event.class);
-        Lobby lobby = converter.readDocument(event.getEventData().toString().getBytes(), Lobby.class).get();
+        Lobby lobby = converter.readDocument(event.getEventData().toString(), Lobby.class).get();
         lobbyService.create(lobby);
     }
 
@@ -45,11 +45,12 @@ public class EventListener {
     public void handleUIEvent(byte[] rawEvent, @Header("Authorization") String authhorization) throws Exception {
         log.info("Raw event received: {}", new String(rawEvent));
         Event event = objectMapper.readValue(rawEvent, Event.class);
+
         if (event.getEventMetaData().getType().equals(EventTypes.MEMBER_EVENT)) {
-            MatchMember member = converter.readDocument(event.getEventData().toString().getBytes(), MatchMember.class).get();
+            MatchMember member = converter.readDocument(event.getEventData().toString(), MatchMember.class).get();
             lobbyService.updateMemberStatus(member.getLobby().getId(), member.getId());
         } else if (event.getEventMetaData().getType().equals(EventTypes.VOTE_EVENT)) {
-            LobbyMap map = converter.readDocument(event.getEventData().toString().getBytes(), LobbyMap.class).get();
+            LobbyMap map = converter.readDocument(event.getEventData().toString(), LobbyMap.class).get();
             lobbyService.voteCard(map.getLobby().getId(), map.getVoteItem().getId(), LobbyMapType.USER_PICK);
         }
     }

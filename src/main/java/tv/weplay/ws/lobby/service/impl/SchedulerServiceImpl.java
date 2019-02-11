@@ -3,12 +3,13 @@ package tv.weplay.ws.lobby.service.impl;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import org.quartz.*;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import tv.weplay.ws.lobby.service.SchedulerService;
 
 import java.time.ZonedDateTime;
 import java.util.Date;
+
+import static java.util.Objects.nonNull;
 
 @Service
 @RequiredArgsConstructor
@@ -40,7 +41,7 @@ public class SchedulerServiceImpl implements SchedulerService {
     }
 
     private Trigger buildJobTrigger(JobDetail jobDetail, ZonedDateTime startAt, Integer interval) {
-        ScheduleBuilder<?> scheduleBuilder = interval != null ? SimpleScheduleBuilder.repeatSecondlyForever(interval) :
+        ScheduleBuilder<?> scheduleBuilder = nonNull(interval) ? SimpleScheduleBuilder.repeatSecondlyForever(interval) :
                 SimpleScheduleBuilder.simpleSchedule().withMisfireHandlingInstructionFireNow();
         return TriggerBuilder.newTrigger()
                 .forJob(jobDetail)
