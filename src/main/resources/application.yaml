@@ -4,11 +4,6 @@ spring:
     username: daemon
     password: Wepl@y-d@Em0n
     virtual-host: local
-  jackson:
-    serialization:
-      write_dates_as_timestamps: false
-    property-naming-strategy: SNAKE_CASE
-    default-property-inclusion: non_null
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
     url: jdbc:mysql://localhost:3306/lobby_dev

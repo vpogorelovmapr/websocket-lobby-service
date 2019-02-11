@@ -74,6 +74,20 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     @Override
+    public void updateMemberStatus(Long lobbyId, Long memberId) {
+        log.info("Updating member with id {} for lobby {}", memberId, lobbyId);
+        Lobby lobby = findById(lobbyId);
+        Optional<MatchMember> matchMember = lobby.getMatch().getMembers().stream()
+                .filter(member -> member.getId().equals(memberId))
+                .findAny();
+        matchMember.ifPresent(member -> {
+            member.setStatus(MemberStatus.ONLINE);
+            update(lobby);
+            publishEventToRabbitMQ(member, lobbyId);
+        });
+    }
+
+    @Override
     public void voteRandomCard(Long lobbyId) {
         Lobby lobby = findById(lobbyId);
         Long cardId = getRandomCardId(lobby);
@@ -86,7 +100,7 @@ public class LobbyServiceImpl implements LobbyService {
         Optional<LobbyMap> lobbyMap = getNextLobbyMap(lobby);
         lobbyMap.ifPresent(map -> {
             map.setVoteItem(new VoteItem(cardId));
-            Lobby updated = update(lobby);
+            update(lobby);
             publishEventToRabbitMQ(map, lobbyId);
         });
     }
@@ -101,19 +115,36 @@ public class LobbyServiceImpl implements LobbyService {
 
     @SneakyThrows
     private void publishEventToRabbitMQ(Lobby lobby) {
-        log.info("Publishing event to rabbitMQ {}", lobby);
         Lobby event = buildLobbyEvent(lobby);
         byte[] data = apiConverter.writeObject(event);
+        log.info("Publishing event to rabbitMQ [{}]", new String(data));
         rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents(), EventTypes.MATCH_STATUS_EVENT);
     }
 
     @SneakyThrows
     private void publishEventToRabbitMQ(LobbyMap map, Long lobbyId) {
-        log.info("Publishing event to rabbitMQ {}", map);
         LobbyMap event = buildLobbyMapEvent(map, lobbyId);
         byte[] data = apiConverter.writeObject(event);
+        log.info("Publishing event to rabbitMQ [{}]", new String(data));
         rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents(), EventTypes.VOTE_EVENT);
         rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingTournamentsEvents(), EventTypes.VOTE_EVENT);
+    }
+
+    @SneakyThrows
+    private void publishEventToRabbitMQ(MatchMember member, Long lobbyId) {
+        MatchMember event = buildMatchMemberEvent(member, lobbyId);
+        byte[] data = apiConverter.writeObject(event);
+        log.info("Publishing event to rabbitMQ [{}]", new String(data));
+        rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents(), EventTypes.MEMBER_EVENT);
+        rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingTournamentsEvents(), EventTypes.MEMBER_EVENT);
+    }
+
+    private MatchMember buildMatchMemberEvent(MatchMember member, Long lobbyId) {
+        return MatchMember.builder()
+                .id(member.getId())
+                .status(member.getStatus())
+                .lobby(Lobby.builder().id(lobbyId).build())
+                .build();
     }
 
     private Lobby buildLobbyEvent(Lobby lobby) {
@@ -136,7 +167,7 @@ public class LobbyServiceImpl implements LobbyService {
         JobDataMap dataMap = new JobDataMap();
         dataMap.put(LOBBY_ID, lobby.getId());
         schedulerHelper.schedule(UUID.randomUUID().toString(), MATCH_START_GROUP,
-                ZonedDateTime.now().plusSeconds(20), dataMap, MatchStartJob.class);
+                ZonedDateTime.now().plusSeconds(lobby.getDuration()), dataMap, MatchStartJob.class);
     }
 
     private Long getRandomCardId(Lobby lobby) {

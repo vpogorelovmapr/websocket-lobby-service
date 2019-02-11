@@ -16,6 +16,8 @@ public interface LobbyService {
 
     List<Lobby> findAll();
 
+    void updateMemberStatus(Long lobbyId, Long memberId);
+
     void voteRandomCard(Long id);
 
     void voteCard(Long lobbyId, Long cardId);

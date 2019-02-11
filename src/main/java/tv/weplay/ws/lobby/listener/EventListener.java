@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import tv.weplay.ws.lobby.common.EventTypes;
 import tv.weplay.ws.lobby.config.properties.RabbitmqQueues;
 import tv.weplay.ws.lobby.converter.JsonApiConverter;
 import tv.weplay.ws.lobby.model.dto.*;
@@ -32,10 +33,20 @@ public class EventListener {
     }
 
     @RabbitListener(queues = "#{rabbitmqQueues.incomingTournamentsEvents}")
-    public void handleEvent(byte[] rawEvent) throws Exception {
+    public void handleLobbyCreationEvent(byte[] rawEvent) throws Exception {
         log.info("Raw event received: {}", new String(rawEvent));
         Event event = objectMapper.readValue(rawEvent, Event.class);
         Lobby lobby = converter.readDocument(event.getEventData().toString().getBytes(), Lobby.class).get();
         lobbyService.create(lobby);
+    }
+
+    @RabbitListener(queues = "#{rabbitmqQueues.incomingUiEvents}")
+    public void handleUIEvent(byte[] rawEvent) throws Exception {
+        log.info("Raw event received: {}", new String(rawEvent));
+        Event event = objectMapper.readValue(rawEvent, Event.class);
+        if (event.getEventMetaData().getType().equals(EventTypes.MEMBER_EVENT)) {
+            MatchMember member = converter.readDocument(event.getEventData().toString().getBytes(), MatchMember.class).get();
+            lobbyService.updateMemberStatus(member.getLobby().getId(), member.getId());
+        }
     }
 }
