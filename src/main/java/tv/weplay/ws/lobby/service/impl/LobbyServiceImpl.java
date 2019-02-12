@@ -149,7 +149,7 @@ public class LobbyServiceImpl implements LobbyService {
     public boolean isLastVote(Lobby lobby) {
         return lobby.getLobbyMap().stream()
                 .map(LobbyMap::getVoteItem)
-                .filter(Objects::nonNull)
+                .filter(Objects::isNull)
                 .count() == 1;
     }
 
