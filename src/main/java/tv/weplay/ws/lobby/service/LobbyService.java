@@ -22,7 +22,9 @@ public interface LobbyService {
 
     void voteRandomCard(Long id, LobbyMapType type);
 
-    void voteCard(Long lobbyId, Long cardId, LobbyMapType type);
+    void voteCardByServer(Long lobbyId, Long cardId, LobbyMapType type);
+
+    void voteCardByUser(Long lobbyId, LobbyMap map, Long userId);
 
     boolean isLastVote(Lobby lobby);
 }

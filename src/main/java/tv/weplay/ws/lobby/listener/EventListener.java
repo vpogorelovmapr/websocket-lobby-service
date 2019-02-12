@@ -1,6 +1,7 @@
 package tv.weplay.ws.lobby.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.rabbitmq.client.LongString;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +9,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import pro.javatar.security.jwt.TokenVerifier;
 import tv.weplay.ws.lobby.common.EventTypes;
 import tv.weplay.ws.lobby.config.properties.RabbitmqQueues;
 import tv.weplay.ws.lobby.converter.JsonApiConverter;
@@ -41,8 +43,8 @@ public class EventListener {
         lobbyService.create(lobby);
     }
 
-//    @RabbitListener(queues = "#{rabbitmqQueues.incomingUiEvents}")
-    public void handleUIEvent(byte[] rawEvent, @Header("Authorization") String authhorization) throws Exception {
+    @RabbitListener(queues = "#{rabbitmqQueues.incomingUiEvents}")
+    public void handleUIEvent(byte[] rawEvent, @Header("Authorization") LongString authhorization) throws Exception {
         log.info("Raw event received: {}", new String(rawEvent));
         Event event = objectMapper.readValue(rawEvent, Event.class);
 
@@ -50,8 +52,16 @@ public class EventListener {
             MatchMember member = converter.readDocument(event.getEventData().toString(), MatchMember.class).get();
             lobbyService.updateMemberStatus(member.getLobby().getId(), member.getId());
         } else if (event.getEventMetaData().getType().equals(EventTypes.VOTE_EVENT)) {
+            Long userId = getUserId(authhorization.toString());
             LobbyMap map = converter.readDocument(event.getEventData().toString(), LobbyMap.class).get();
-            lobbyService.voteCard(map.getLobby().getId(), map.getVoteItem().getId(), LobbyMapType.USER_PICK);
+            lobbyService.voteCardByUser(map.getLobby().getId(), map, userId);
         }
+    }
+
+    @SneakyThrows
+    private Long getUserId(String authorization) {
+        String token = authorization.split(" ")[1];
+        TokenVerifier verifier = TokenVerifier.create(token);
+        return verifier.getToken().getUserId();
     }
 }

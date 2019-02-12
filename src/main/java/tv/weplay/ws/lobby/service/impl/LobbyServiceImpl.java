@@ -113,16 +113,31 @@ public class LobbyServiceImpl implements LobbyService {
     public void voteRandomCard(Long lobbyId, LobbyMapType type) {
         Lobby lobby = findById(lobbyId);
         Long cardId = getRandomCardId(lobby);
-        voteCard(lobby.getId(), cardId, type);
+        voteCardByServer(lobby.getId(), cardId, type);
     }
 
     @Override
-    public void voteCard(Long lobbyId, Long cardId, LobbyMapType type) {
+    public void voteCardByServer(Long lobbyId, Long cardId, LobbyMapType type) {
         Lobby lobby = findById(lobbyId);
         Optional<LobbyMap> lobbyMap = getNextLobbyMap(lobby);
         lobbyMap.ifPresent(map -> {
             map.setVoteItem(new VoteItem(cardId));
             map.setStatus(type);
+            update(lobby);
+            LobbyMap event = buildLobbyMapEvent(map, lobbyId);
+            publishEventToRabbitMQ(event, EventTypes.VOTE_EVENT);
+            voteRandomCardIfLastVote(lobby);
+        });
+    }
+
+    @Override
+    public void voteCardByUser(Long lobbyId, LobbyMap lobbyMap, Long userId) {
+        Lobby lobby = findById(lobbyId);
+        Optional<LobbyMap> nextLobbyMap = getNextLobbyMap(lobby);
+        nextLobbyMap.ifPresent(map -> {
+            validateVoteRequest(lobbyMap, lobby, map);
+            map.setVoteItem(lobbyMap.getVoteItem());
+            map.setStatus(LobbyMapType.USER_PICK);
             update(lobby);
             LobbyMap event = buildLobbyMapEvent(map, lobbyId);
             publishEventToRabbitMQ(event, EventTypes.VOTE_EVENT);
@@ -216,6 +231,13 @@ public class LobbyServiceImpl implements LobbyService {
         return votePool.get(index);
     }
 
+    private List<Long> getFreeCardIds(Lobby lobby) {
+        List<Long> pickedCardIds = getPickedCardIds(lobby);
+        List<Long> votePool = new ArrayList<>(lobby.getSettings().getVotePool());
+        votePool.removeAll(pickedCardIds);
+        return votePool;
+    }
+
     private List<Long> getPickedCardIds(Lobby lobby) {
         return lobby.getLobbyMap().stream()
                 .map(LobbyMap::getVoteItem)
@@ -234,6 +256,20 @@ public class LobbyServiceImpl implements LobbyService {
         return lobby.getMatch().getMembers().stream()
                 .map(MatchMember::getStatus)
                 .noneMatch(status -> status.equals(MemberStatus.OFFLINE));
+    }
+
+    private void validateVoteRequest(LobbyMap lobbyMap, Lobby lobby, LobbyMap map) {
+        if (lobbyMap.getId().equals(map.getId())) {
+            throw new IllegalArgumentException("Invalid lobby id");
+        }
+        Member member = lobbyMap.getMember();
+        if (member == null || !member.getId().equals(map.getId())) {
+            throw new IllegalArgumentException("Invalid user id");
+        }
+        List<Long> freeCardIds = getFreeCardIds(lobby);
+        if (freeCardIds.contains(map.getVoteItem().getId())) {
+            throw new IllegalArgumentException("Invalid card id");
+        }
     }
 
 }
