@@ -25,15 +25,6 @@ public class EventListener {
     private final LobbyService lobbyService;
     private final ObjectMapper objectMapper;
     private final JsonApiConverter converter;
-    private final RabbitmqQueues rabbitmqQueues;
-    private final RabbitMQEventSenderService rabbitMQService;
-//
-//    @SneakyThrows
-//    @Scheduled(fixedDelay = 15000)
-//    public void schedule() {
-//        String text = "{\"data\":{\"type\":\"Lobby\",\"id\":\"1\",\"attributes\":{\"duration\":\"120\", \"status\":\"UPCOMING\"}}}";
-//        rabbitMQService.prepareAndSendEvent(text.getBytes(), rabbitmqQueues.getOutcomingUiEvents(), "MatchStatusEvent");
-//    }
 
     @RabbitListener(queues = "#{rabbitmqQueues.incomingTournamentsEvents}")
     public void handleLobbyCreationEvent(byte[] rawEvent) throws Exception {
