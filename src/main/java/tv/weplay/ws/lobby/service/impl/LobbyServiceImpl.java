@@ -135,7 +135,7 @@ public class LobbyServiceImpl implements LobbyService {
         Lobby lobby = findById(lobbyId);
         Optional<LobbyMap> nextLobbyMap = getNextLobbyMap(lobby);
         nextLobbyMap.ifPresent(map -> {
-            validateVoteRequest(lobbyMap, lobby, map);
+            if (!isValidVoteRequest(lobbyMap, lobby, map, userId)) return;
             map.setVoteItem(lobbyMap.getVoteItem());
             map.setStatus(LobbyMapType.USER_PICK);
             update(lobby);
@@ -258,18 +258,24 @@ public class LobbyServiceImpl implements LobbyService {
                 .noneMatch(status -> status.equals(MemberStatus.OFFLINE));
     }
 
-    private void validateVoteRequest(LobbyMap lobbyMap, Lobby lobby, LobbyMap map) {
-        if (lobbyMap.getId().equals(map.getId())) {
-            throw new IllegalArgumentException("Invalid lobby id");
+    private boolean isValidVoteRequest(LobbyMap lobbyMap, Lobby lobby, LobbyMap map, Long userId) {
+        //We cannot throw exception here because ack message will not be sent to rabbitmq and message not read
+        if (!lobbyMap.getId().equals(map.getId())) {
+            log.info("Invalid lobby map id {}", lobbyMap.getId());
+            return false;
         }
-        Member member = lobbyMap.getMember();
-        if (member == null || !member.getId().equals(map.getId())) {
-            throw new IllegalArgumentException("Invalid user id");
+        Member member = map.getMember();
+        if (member == null || !member.getId().equals(userId)) {
+            log.info("Invalid user id {}", userId);
+            return false;
+
         }
         List<Long> freeCardIds = getFreeCardIds(lobby);
-        if (freeCardIds.contains(map.getVoteItem().getId())) {
-            throw new IllegalArgumentException("Invalid card id");
+        if (!freeCardIds.contains(lobbyMap.getVoteItem().getId())) {
+            log.info("Invalid card id {}", lobbyMap.getVoteItem().getId());
+            return false;
         }
+        return true;
     }
 
 }
