@@ -227,7 +227,7 @@ public class LobbyServiceImpl implements LobbyService {
         List<Long> pickedCardIds = getPickedCardIds(lobby);
         List<Long> votePool = new ArrayList<>(lobby.getSettings().getVotePool());
         votePool.removeAll(pickedCardIds);
-        int index = (int) (Math.random() % (pickedCardIds.size() - 1));
+        int index = (int) (Math.random() % (votePool.size() - 1));
         return votePool.get(index);
     }
 
