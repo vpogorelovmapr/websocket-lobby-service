@@ -1,21 +1,17 @@
 package tv.weplay.ws.lobby.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.rabbitmq.client.LongString;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.messaging.handler.annotation.Header;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import pro.javatar.security.jwt.TokenVerifier;
 import tv.weplay.ws.lobby.common.EventTypes;
-import tv.weplay.ws.lobby.config.properties.RabbitmqQueues;
 import tv.weplay.ws.lobby.converter.JsonApiConverter;
 import tv.weplay.ws.lobby.model.dto.*;
 import tv.weplay.ws.lobby.service.LobbyService;
-import tv.weplay.ws.lobby.service.impl.RabbitMQEventSenderService;
 
 @Slf4j
 @Component
@@ -35,7 +31,7 @@ public class EventListener {
     }
 
     @RabbitListener(queues = "#{rabbitmqQueues.incomingUiEvents}")
-    public void handleUIEvent(byte[] rawEvent) throws Exception {
+    public void handleUIEvent(String rawEvent, @Header("user_id") Long userId) throws Exception {
         log.info("Raw event received: {}", rawEvent);
         Event event = objectMapper.readValue(rawEvent, Event.class);
 
@@ -45,7 +41,6 @@ public class EventListener {
         } else if (event.getEventMetaData().getType().equals(EventTypes.VOTE_EVENT)) {
 //            Long userId = getUserId(authhorization.toString());
 //            Long userId = Long.parseLong(userIdHeader);
-            Long userId = 666L;
             LobbyMap map = converter.readDocument(event.getEventData().toString(), LobbyMap.class).get();
             lobbyService.voteCardByUser(map.getLobby().getId(), map, userId);
         }
