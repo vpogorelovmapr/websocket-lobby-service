@@ -35,7 +35,7 @@ public class EventListener {
     }
 
     @RabbitListener(queues = "#{rabbitmqQueues.incomingUiEvents}")
-    public void handleUIEvent(byte[] rawEvent, @Header("Authorization") LongString authhorization) throws Exception {
+    public void handleUIEvent(byte[] rawEvent, @Header("user_id") String userIdHeader) throws Exception {
         log.info("Raw event received: {}", new String(rawEvent));
         Event event = objectMapper.readValue(rawEvent, Event.class);
 
@@ -43,7 +43,8 @@ public class EventListener {
             MatchMember member = converter.readDocument(event.getEventData().toString(), MatchMember.class).get();
             lobbyService.updateMemberStatus(member.getLobby().getId(), member.getId());
         } else if (event.getEventMetaData().getType().equals(EventTypes.VOTE_EVENT)) {
-            Long userId = getUserId(authhorization.toString());
+//            Long userId = getUserId(authhorization.toString());
+            Long userId = Long.parseLong(userIdHeader);
             LobbyMap map = converter.readDocument(event.getEventData().toString(), LobbyMap.class).get();
             lobbyService.voteCardByUser(map.getLobby().getId(), map, userId);
         }
