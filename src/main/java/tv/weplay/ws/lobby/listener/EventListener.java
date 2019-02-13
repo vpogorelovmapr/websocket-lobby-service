@@ -35,8 +35,8 @@ public class EventListener {
     }
 
     @RabbitListener(queues = "#{rabbitmqQueues.incomingUiEvents}")
-    public void handleUIEvent(byte[] rawEvent) throws Exception {
-        log.info("Raw event received: {}", new String(rawEvent));
+    public void handleUIEvent(String rawEvent) throws Exception {
+        log.info("Raw event received: {}", rawEvent);
         Event event = objectMapper.readValue(rawEvent, Event.class);
 
         if (event.getEventMetaData().getType().equals(EventTypes.MEMBER_EVENT)) {
