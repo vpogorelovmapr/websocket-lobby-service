@@ -46,7 +46,7 @@ public class LobbyServiceImpl implements LobbyService {
         Lobby created = lobbyMapper.toDTO(createdEntity);
         log.info("Created lobby {}", created);
         Lobby event = buildLobbyCreatedEvent(lobby);
-        publishEventToRabbitMQ(event, EventTypes.MATCH_CREATED_EVENT );
+        publishEventToRabbitMQ(event, lobby.getId(), EventTypes.MATCH_CREATED_EVENT );
         scheduleStartMatchJob(created);
         return created;
     }
@@ -87,7 +87,7 @@ public class LobbyServiceImpl implements LobbyService {
         update(lobby);
 
         Lobby event = status.equals(LobbyStatus.ONGOING) ? buildMatchStartEvent(lobby) : buildChangeLobbyStatusEvent(lobby);
-        publishEventToRabbitMQ(event, type);
+        publishEventToRabbitMQ(event, lobby.getId(), type);
 
         if (status.equals(LobbyStatus.ONGOING)) {
             scheduleVoteJob(lobbyId, lobby.getSettings().getVoteTime());
@@ -105,7 +105,7 @@ public class LobbyServiceImpl implements LobbyService {
             member.setStatus(MemberStatus.ONLINE);
             update(lobby);
             MatchMember event = buildMatchMemberEvent(member, lobbyId);
-            publishEventToRabbitMQ(event, EventTypes.MEMBER_EVENT);
+            publishEventToRabbitMQ(event, lobby.getId(), EventTypes.MEMBER_EVENT);
         });
     }
 
@@ -125,7 +125,7 @@ public class LobbyServiceImpl implements LobbyService {
             map.setStatus(type);
             update(lobby);
             LobbyMap event = buildLobbyMapEvent(map, lobbyId);
-            publishEventToRabbitMQ(event, EventTypes.VOTE_EVENT);
+            publishEventToRabbitMQ(event, lobby.getId(), EventTypes.VOTE_EVENT);
             voteRandomCardIfLastVote(lobby);
         });
     }
@@ -140,7 +140,7 @@ public class LobbyServiceImpl implements LobbyService {
             map.setStatus(LobbyMapType.USER_PICK);
             update(lobby);
             LobbyMap event = buildLobbyMapEvent(map, lobbyId);
-            publishEventToRabbitMQ(event, EventTypes.VOTE_EVENT);
+            publishEventToRabbitMQ(event, lobby.getId(), EventTypes.VOTE_EVENT);
             voteRandomCardIfLastVote(lobby);
         });
     }
@@ -159,15 +159,15 @@ public class LobbyServiceImpl implements LobbyService {
             voteRandomCard(lobby.getId(), LobbyMapType.SERVER_PICK);
             schedulerService.unschedule(VOTE_PREFIX + lobby.getId(), VOTE_GROUP);
             Lobby event = buildChangeLobbyStatusEvent(lobby);
-            publishEventToRabbitMQ(event, EventTypes.MATCH_ENDED_EVENT);
+            publishEventToRabbitMQ(event, lobby.getId(), EventTypes.MATCH_ENDED_EVENT);
         }
     }
 
     @SneakyThrows
-    private void publishEventToRabbitMQ(Object event, String type) {
+    private void publishEventToRabbitMQ(Object event, Long lobbyId, String type) {
         byte[] data = converter.writeObject(event);
         log.info("Publishing event to rabbitMQ [{}]", new String(data));
-        rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingUiEvents(), type);
+        rabbitMQService.prepareAndSendEvent(data, lobbyId.toString(), type);
         rabbitMQService.prepareAndSendEvent(data, rabbitmqQueues.getOutcomingTournamentsEvents(), type);
     }
 
