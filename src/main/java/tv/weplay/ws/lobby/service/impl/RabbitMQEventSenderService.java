@@ -32,16 +32,16 @@ public class RabbitMQEventSenderService implements EventSenderService {
     private String messageProtocolVersion;
 
     @Override
-    public void prepareAndSendEvent(String data, String queueName, String type) {
+    public void prepareAndSendEvent(String data, String routeKey, String type) {
         String payload = buildRabbitMQEvent(data, type);
         log.trace("Event to be sent: [{}]", payload);
-        rabbitTemplate.convertAndSend(DEFAULT_EXCHANGE, queueName, payload);
+        rabbitTemplate.convertAndSend(DEFAULT_EXCHANGE, routeKey, payload);
         log.trace("Message that has been successfully sent: [{}]", payload);
     }
 
     @Override
-    public void prepareAndSendEvent(byte[] data, String queueName, String type) {
-        prepareAndSendEvent(new String(data), queueName, type);
+    public void prepareAndSendEvent(byte[] data, String routeKey, String type) {
+        prepareAndSendEvent(new String(data), routeKey, type);
     }
 
     @SneakyThrows
