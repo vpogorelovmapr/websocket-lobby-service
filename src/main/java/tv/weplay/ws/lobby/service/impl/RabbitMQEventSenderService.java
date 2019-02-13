@@ -17,7 +17,8 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class RabbitMQEventSenderService implements EventSenderService {
 
-    private static final String DEFAULT_EXCHANGE = "lobby_out_dev";
+    public static final String DEFAULT_EXCHANGE = "";
+    public static final String UI_EXCHANGE = "lobby_out_dev";
 
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
@@ -32,16 +33,16 @@ public class RabbitMQEventSenderService implements EventSenderService {
     private String messageProtocolVersion;
 
     @Override
-    public void prepareAndSendEvent(String data, String routeKey, String type) {
+    public void prepareAndSendEvent(String exchange, String data, String routeKey, String type) {
         String payload = buildRabbitMQEvent(data, type);
         log.trace("Event to be sent: [{}]", payload);
-        rabbitTemplate.convertAndSend(DEFAULT_EXCHANGE, routeKey, payload);
+        rabbitTemplate.convertAndSend(exchange, routeKey, payload);
         log.trace("Message that has been successfully sent: [{}]", payload);
     }
 
     @Override
-    public void prepareAndSendEvent(byte[] data, String routeKey, String type) {
-        prepareAndSendEvent(new String(data), routeKey, type);
+    public void prepareAndSendEvent(String exchange, byte[] data, String routeKey, String type) {
+        prepareAndSendEvent(exchange, new String(data), routeKey, type);
     }
 
     @SneakyThrows
