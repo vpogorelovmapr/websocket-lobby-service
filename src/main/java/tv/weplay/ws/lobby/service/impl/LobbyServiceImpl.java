@@ -140,11 +140,19 @@ public class LobbyServiceImpl implements LobbyService {
             if (!isValidVoteRequest(lobbyMap, lobby, map, userId)) return;
             map.setVoteItem(lobbyMap.getVoteItem());
             map.setStatus(LobbyMapType.USER_PICK);
-            update(lobby);
+            Lobby updated = update(lobby);
+            if (!isLastVote(updated)) {
+                rescheduleVoteJob(lobbyId, updated);
+            }
             LobbyMap event = buildLobbyMapEvent(map, lobbyId);
             publishEventToRabbitMQ(event, lobby.getId(), EventTypes.VOTE_EVENT);
             voteRandomCardIfLastVote(lobby);
         });
+    }
+
+    private void rescheduleVoteJob(Long lobbyId, Lobby lobby) {
+        schedulerService.unschedule(VOTE_PREFIX + lobbyId, VOTE_GROUP);
+        scheduleVoteJob(lobbyId, lobby.getSettings().getVoteTime());
     }
 
     @Override
@@ -169,7 +177,7 @@ public class LobbyServiceImpl implements LobbyService {
     private void publishEventToRabbitMQ(Object event, Long lobbyId, String type) {
         byte[] data = converter.writeObject(event);
         log.info("Publishing event to rabbitMQ [{}]", new String(data));
-        rabbitMQService.prepareAndSendEvent(UI_EXCHANGE, data, lobbyId.toString(), type);
+        rabbitMQService.prepareAndSendEvent(UI_EXCHANGE, data, rabbitmqQueues.getOutcomingUiEvents(), type);
         rabbitMQService.prepareAndSendEvent(DEFAULT_EXCHANGE, data, rabbitmqQueues.getOutcomingTournamentsEvents(), type);
     }
 
