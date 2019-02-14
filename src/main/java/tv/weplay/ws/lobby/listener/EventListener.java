@@ -61,7 +61,6 @@ public class EventListener {
                 MatchMember member = converter.readDocument(event.getEventData().toString(), MatchMember.class).get();
                 lobbyService.updateMemberStatus(member.getLobby().getId(), member.getId());
             } else if (event.getEventMetaData().getType().equals(EventTypes.VOTE_EVENT)) {
-                ;
                 LobbyMap map = converter.readDocument(event.getEventData().toString(), LobbyMap.class).get();
                 lobbyService.voteCardByUser(map.getLobby().getId(), map, userId);
             }
