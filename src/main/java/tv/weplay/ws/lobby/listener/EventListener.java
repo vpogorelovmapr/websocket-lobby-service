@@ -26,8 +26,10 @@ public class EventListener {
     public void handleLobbyCreationEvent(byte[] rawEvent) throws Exception {
         log.info("Raw event received: {}", new String(rawEvent));
         Event event = objectMapper.readValue(rawEvent, Event.class);
-        Lobby lobby = converter.readDocument(event.getEventData().toString(), Lobby.class).get();
-        lobbyService.create(lobby);
+        if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CREATED)) {
+            Lobby lobby = converter.readDocument(event.getEventData().toString(), Lobby.class).get();
+            lobbyService.create(lobby);
+        }
     }
 
     @RabbitListener(queues = "#{rabbitmqQueues.incomingUiEvents}")
