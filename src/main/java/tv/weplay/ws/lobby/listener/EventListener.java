@@ -26,26 +26,15 @@ public class EventListener {
     public void handleLobbyCreationEvent(byte[] rawEvent) throws Exception {
         log.info("Raw event received: {}", new String(rawEvent));
         Event event = objectMapper.readValue(rawEvent, Event.class);
-        if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CREATED)) {
-            Lobby lobby = converter.readDocument(event.getEventData().toString(), Lobby.class).get();
-            lobbyService.create(lobby);
-        }
+        handleLobbyCreatedEvent(event);
+
     }
 
     @RabbitListener(queues = "#{rabbitmqQueues.incomingUiEvents}")
     public void handleUIEvent(String rawEvent, @Header("user_id") Long userId) throws Exception {
         log.info("Raw event received: {}", rawEvent);
         Event event = objectMapper.readValue(rawEvent, Event.class);
-
-        if (event.getEventMetaData().getType().equals(EventTypes.MEMBER_EVENT)) {
-            MatchMember member = converter.readDocument(event.getEventData().toString(), MatchMember.class).get();
-            lobbyService.updateMemberStatus(member.getLobby().getId(), member.getId());
-        } else if (event.getEventMetaData().getType().equals(EventTypes.VOTE_EVENT)) {
-//            Long userId = getUserId(authhorization.toString());
-//            Long userId = Long.parseLong(userIdHeader);
-            LobbyMap map = converter.readDocument(event.getEventData().toString(), LobbyMap.class).get();
-            lobbyService.voteCardByUser(map.getLobby().getId(), map, userId);
-        }
+        handleUIEvent(userId, event);
     }
 
     @SneakyThrows
@@ -54,4 +43,32 @@ public class EventListener {
         TokenVerifier verifier = TokenVerifier.create(token);
         return verifier.getToken().getUserId();
     }
+
+    private void handleLobbyCreatedEvent(Event event) {
+        try {
+            if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CREATED)) {
+                Lobby lobby = converter.readDocument(event.getEventData().toString(), Lobby.class).get();
+                lobbyService.create(lobby);
+            }
+        } catch (Exception e) {
+            log.error("Invalid message format", event);
+        }
+    }
+
+    private void handleUIEvent(@Header("user_id") Long userId, Event event) {
+        try {
+            if (event.getEventMetaData().getType().equals(EventTypes.MEMBER_EVENT)) {
+                MatchMember member = converter.readDocument(event.getEventData().toString(), MatchMember.class).get();
+                lobbyService.updateMemberStatus(member.getLobby().getId(), member.getId());
+            } else if (event.getEventMetaData().getType().equals(EventTypes.VOTE_EVENT)) {
+                ;
+                LobbyMap map = converter.readDocument(event.getEventData().toString(), LobbyMap.class).get();
+                lobbyService.voteCardByUser(map.getLobby().getId(), map, userId);
+            }
+        } catch (Exception e) {
+            log.error("Invalid message format", event, e);
+        }
+    }
+
+
 }
