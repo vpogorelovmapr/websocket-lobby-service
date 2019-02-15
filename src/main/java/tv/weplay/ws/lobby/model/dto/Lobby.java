@@ -20,8 +20,8 @@ public class Lobby {
 
     private LobbyStatus status;
 
-    @JsonProperty("lobby_start_datetime")
-    private LocalDateTime lobbyStartDatetime;
+    @JsonProperty("start_datetime")
+    private LocalDateTime startDatetime;
 
     private Long duration;
 

@@ -201,7 +201,7 @@ public class LobbyServiceImpl implements LobbyService {
     private Lobby buildLobbyCreatedEvent(Lobby lobby) {
         return Lobby.builder()
                 .id(lobby.getId())
-                .lobbyStartDatetime(lobby.getLobbyStartDatetime())
+                .startDatetime(lobby.getStartDatetime())
                 .status(lobby.getStatus())
                 .build();
     }
