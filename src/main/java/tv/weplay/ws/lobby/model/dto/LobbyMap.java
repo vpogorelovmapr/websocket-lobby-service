@@ -4,6 +4,8 @@ import com.github.jasminb.jsonapi.LongIdHandler;
 import com.github.jasminb.jsonapi.annotations.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 @Data
 @ToString(exclude = "lobby")
 @Type("LobbyMap")
@@ -27,4 +29,6 @@ public class LobbyMap {
 
     @Relationship("lobby")
     private Lobby lobby;
+
+    private LocalDateTime updatedDatetime;
 }
