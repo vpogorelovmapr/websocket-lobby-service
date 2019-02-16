@@ -25,7 +25,7 @@ rabbitmq:
     incoming-tournaments-events: tournaments_lobby_create_dev
     outcoming-tournaments-events: tournaments_lobby_events_dev
     incoming-ui-events: lobby_in_dev
-    outcoming-ui-events: websocket_out_dev
+    outcoming-ui-events: lobby_out_dev
 
 
 management:

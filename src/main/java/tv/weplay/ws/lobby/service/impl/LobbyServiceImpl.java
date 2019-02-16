@@ -23,7 +23,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static tv.weplay.ws.lobby.service.impl.RabbitMQEventSenderService.DEFAULT_EXCHANGE;
-import static tv.weplay.ws.lobby.service.impl.RabbitMQEventSenderService.UI_EXCHANGE;
 import static tv.weplay.ws.lobby.service.impl.SchedulerServiceImpl.*;
 
 @Slf4j
@@ -177,7 +176,7 @@ public class LobbyServiceImpl implements LobbyService {
     private void publishEventToRabbitMQ(Object event, String lobbyId, String type) {
         byte[] data = converter.writeObject(event);
         log.info("Publishing event to rabbitMQ [{}]", new String(data));
-        rabbitMQService.prepareAndSendEvent(UI_EXCHANGE, data, lobbyId, type);
+        rabbitMQService.prepareAndSendEvent(rabbitmqQueues.getOutcomingUiEvents(), data, lobbyId, type);
         rabbitMQService.prepareAndSendEvent(DEFAULT_EXCHANGE, data, rabbitmqQueues.getOutcomingTournamentsEvents(), type);
     }
 

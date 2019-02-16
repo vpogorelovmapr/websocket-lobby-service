@@ -18,7 +18,6 @@ import java.time.LocalDateTime;
 public class RabbitMQEventSenderService implements EventSenderService {
 
     public static final String DEFAULT_EXCHANGE = "";
-    public static final String UI_EXCHANGE = "lobby_out_dev";
 
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
