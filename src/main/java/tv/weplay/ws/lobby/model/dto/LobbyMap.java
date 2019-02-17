@@ -1,5 +1,6 @@
 package tv.weplay.ws.lobby.model.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.jasminb.jsonapi.LongIdHandler;
 import com.github.jasminb.jsonapi.annotations.*;
 import lombok.*;
@@ -30,5 +31,6 @@ public class LobbyMap {
     @Relationship("lobby")
     private Lobby lobby;
 
+    @JsonProperty("update_datetime")
     private LocalDateTime updatedDatetime;
 }
