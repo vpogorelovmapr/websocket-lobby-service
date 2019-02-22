@@ -1,5 +1,12 @@
 package tv.weplay.ws.lobby.service.impl;
 
+import static tv.weplay.ws.lobby.service.impl.RabbitMQEventSenderService.DEFAULT_EXCHANGE;
+import static tv.weplay.ws.lobby.service.impl.SchedulerServiceImpl.*;
+
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -16,14 +23,6 @@ import tv.weplay.ws.lobby.scheduled.MatchStartJob;
 import tv.weplay.ws.lobby.scheduled.VoteJob;
 import tv.weplay.ws.lobby.service.LobbyService;
 import tv.weplay.ws.lobby.service.SchedulerService;
-
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static tv.weplay.ws.lobby.service.impl.RabbitMQEventSenderService.DEFAULT_EXCHANGE;
-import static tv.weplay.ws.lobby.service.impl.SchedulerServiceImpl.*;
 
 @Slf4j
 @Service
@@ -99,6 +98,7 @@ public class LobbyServiceImpl implements LobbyService {
     public void updateMemberStatus(Long lobbyId, Long memberId) {
         log.info("Updating member with id {} for lobby {}", memberId, lobbyId);
         Lobby lobby = findById(lobbyId);
+        log.info("Lobby found: {}", lobby);
         Optional<MatchMember> matchMember = lobby.getMatch().getMembers().stream()
                 .filter(member -> member.getId().equals(memberId))
                 .findAny();
