@@ -8,8 +8,9 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @NoArgsConstructor
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-@ConfigurationProperties(prefix = "rabbitmq.queues")
-public class RabbitmqQueues {
+@ConfigurationProperties(prefix = "rabbitmq")
+public class RabbitmqProperties {
+
     private String incomingTournamentsEvents;
 
     private String outcomingTournamentsEvents;
@@ -17,4 +18,8 @@ public class RabbitmqQueues {
     private String incomingUiEvents;
 
     private String outcomingUiEvents;
+
+    private String deadLetterExchangeName;
+
+    private String deadLetterQueueName;
 }

@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobDataMap;
 import org.springframework.stereotype.Service;
 import tv.weplay.ws.lobby.common.EventTypes;
-import tv.weplay.ws.lobby.config.properties.RabbitmqQueues;
+import tv.weplay.ws.lobby.config.properties.RabbitmqProperties;
 import tv.weplay.ws.lobby.converter.JsonApiConverter;
 import tv.weplay.ws.lobby.mapper.LobbyMapper;
 import tv.weplay.ws.lobby.model.dto.*;
@@ -34,7 +34,7 @@ public class LobbyServiceImpl implements LobbyService {
     private final LobbyMapper lobbyMapper;
     private final LobbyRepository lobbyRepository;
     private final RabbitMQEventSenderService rabbitMQService;
-    private final RabbitmqQueues rabbitmqQueues;
+    private final RabbitmqProperties rabbitmqProperties;
     private final JsonApiConverter converter;
     private final SchedulerService schedulerService;
 
@@ -46,7 +46,7 @@ public class LobbyServiceImpl implements LobbyService {
         Lobby created = lobbyMapper.toDTO(createdEntity);
         log.info("Created lobby {}", created);
         Lobby event = buildLobbyCreatedEvent(created);
-        publishEventToRabbitMQ(event, rabbitmqQueues.getOutcomingUiEvents(), EventTypes.MATCH_CREATED_EVENT );
+        publishEventToRabbitMQ(event, rabbitmqProperties.getOutcomingUiEvents(), EventTypes.MATCH_CREATED_EVENT);
         scheduleStartMatchJob(created);
         return created;
     }
@@ -176,8 +176,9 @@ public class LobbyServiceImpl implements LobbyService {
     private void publishEventToRabbitMQ(Object event, String lobbyId, String type) {
         byte[] data = converter.writeObject(event);
         log.info("Publishing event to rabbitMQ [{}]", new String(data));
-        rabbitMQService.prepareAndSendEvent(rabbitmqQueues.getOutcomingUiEvents(), data, lobbyId, type);
-        rabbitMQService.prepareAndSendEvent(DEFAULT_EXCHANGE, data, rabbitmqQueues.getOutcomingTournamentsEvents(), type);
+        rabbitMQService.prepareAndSendEvent(rabbitmqProperties.getOutcomingUiEvents(), data, lobbyId, type);
+        rabbitMQService.prepareAndSendEvent(DEFAULT_EXCHANGE, data,
+                rabbitmqProperties.getOutcomingTournamentsEvents(), type);
     }
 
     private MatchMember buildMatchMemberEvent(MatchMember member, Long lobbyId) {

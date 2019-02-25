@@ -21,11 +21,12 @@ spring:
       org.quartz.threadPool.threadCount: 10
 
 rabbitmq:
-  queues:
-    incoming-tournaments-events: tournaments_lobby_create_dev
-    outcoming-tournaments-events: tournaments_lobby_events_dev
-    incoming-ui-events: lobby_in_dev
-    outcoming-ui-events: lobby_out_dev
+  dead-letter-exchange-name: lobby_dlx_dev
+  dead-letter-queue-name: lobby_dlq_dev
+  incoming-tournaments-events: tournaments_lobby_create_dev
+  outcoming-tournaments-events: tournaments_lobby_events_dev
+  incoming-ui-events: lobby_in_dev
+  outcoming-ui-events: lobby_out_dev
 
 
 management:

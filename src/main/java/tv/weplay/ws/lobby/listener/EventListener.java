@@ -22,7 +22,7 @@ public class EventListener {
     private final ObjectMapper objectMapper;
     private final JsonApiConverter converter;
 
-    @RabbitListener(queues = "#{rabbitmqQueues.incomingTournamentsEvents}")
+    @RabbitListener(queues = "#{rabbitmqProperties.incomingTournamentsEvents}")
     public void handleLobbyCreationEvent(byte[] rawEvent) throws Exception {
         log.info("Raw event received: {}", new String(rawEvent));
         Event event = objectMapper.readValue(rawEvent, Event.class);
@@ -30,7 +30,7 @@ public class EventListener {
 
     }
 
-    @RabbitListener(queues = "#{rabbitmqQueues.incomingUiEvents}")
+    @RabbitListener(queues = "#{rabbitmqProperties.incomingUiEvents}")
     public void handleUIEvent(String rawEvent, @Header("user_id") Long userId) throws Exception {
         log.info("Raw event received: {}", rawEvent);
         Event event = objectMapper.readValue(rawEvent, Event.class);
@@ -45,31 +45,22 @@ public class EventListener {
     }
 
     private void handleLobbyCreatedEvent(Event event) {
-        try {
-            if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CREATED)) {
-                Lobby lobby = converter.readDocument(event.getEventData().toString(), Lobby.class).get();
-                lobbyService.create(lobby);
-            }
-        } catch (Exception e) {
-            log.error("Invalid message format", event);
+        if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CREATED)) {
+            Lobby lobby = converter.readDocument(event.getEventData().toString(), Lobby.class).get();
+            lobbyService.create(lobby);
         }
     }
 
     private void handleUIEvent(@Header("user_id") Long userId, Event event) {
-        try {
-            if (event.getEventMetaData().getType().equals(EventTypes.MEMBER_EVENT)) {
-                log.info("Raw event: {}", event);
-                MatchMember member = converter.readDocument(event.getEventData().toString(), MatchMember.class).get();
-                log.info("Member: {}", member);
-                lobbyService.updateMemberStatus(member.getLobby().getId(), member.getId());
-            } else if (event.getEventMetaData().getType().equals(EventTypes.VOTE_EVENT)) {
-                LobbyMap map = converter.readDocument(event.getEventData().toString(), LobbyMap.class).get();
-                lobbyService.voteCardByUser(map.getLobby().getId(), map, userId);
-            }
-        } catch (Exception e) {
-            log.error("Invalid message format", event, e);
+        if (event.getEventMetaData().getType().equals(EventTypes.MEMBER_EVENT)) {
+            log.info("Raw event: {}", event);
+            MatchMember member = converter.readDocument(event.getEventData().toString(), MatchMember.class).get();
+            log.info("Member: {}", member);
+            lobbyService.updateMemberStatus(member.getLobby().getId(), member.getId());
+        } else if (event.getEventMetaData().getType().equals(EventTypes.VOTE_EVENT)) {
+            LobbyMap map = converter.readDocument(event.getEventData().toString(), LobbyMap.class).get();
+            lobbyService.voteCardByUser(map.getLobby().getId(), map, userId);
         }
     }
-
 
 }
