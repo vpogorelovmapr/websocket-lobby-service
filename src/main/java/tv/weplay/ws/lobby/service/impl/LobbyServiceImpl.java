@@ -111,19 +111,19 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     @Override
-    public void voteRandomCard(Long lobbyId, LobbyMapType type) {
+    public void voteRandomCard(Long lobbyId, LobbyMapStatus type) {
         Lobby lobby = findById(lobbyId);
         Long cardId = getRandomCardId(lobby);
         voteCardByServer(lobby.getId(), cardId, type);
     }
 
     @Override
-    public void voteCardByServer(Long lobbyId, Long cardId, LobbyMapType type) {
+    public void voteCardByServer(Long lobbyId, Long cardId, LobbyMapStatus status) {
         Lobby lobby = findById(lobbyId);
         Optional<LobbyMap> lobbyMap = getNextLobbyMap(lobby);
         lobbyMap.ifPresent(map -> {
             map.setVoteItem(new VoteItem(cardId));
-            map.setStatus(type);
+            map.setStatus(status);
             update(lobby);
             LobbyMap event = buildLobbyMapEvent(map, lobbyId);
             publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.VOTE_EVENT);
@@ -138,7 +138,7 @@ public class LobbyServiceImpl implements LobbyService {
         nextLobbyMap.ifPresent(map -> {
             if (!isValidVoteRequest(lobbyMap, lobby, map, userId)) return;
             map.setVoteItem(lobbyMap.getVoteItem());
-            map.setStatus(LobbyMapType.USER_PICK);
+            map.setStatus(LobbyMapStatus.USER_PICK);
             Lobby updated = update(lobby);
             if (!isLastVote(updated)) {
                 rescheduleVoteJob(lobbyId, updated);
@@ -165,7 +165,7 @@ public class LobbyServiceImpl implements LobbyService {
     private void voteRandomCardIfLastVote(Lobby lobby) {
         if (isLastVote(lobby)) {
             lobby.setStatus(LobbyStatus.ENDED);
-            voteRandomCard(lobby.getId(), LobbyMapType.SERVER_PICK);
+            voteRandomCard(lobby.getId(), LobbyMapStatus.SERVER_PICK);
             schedulerService.unschedule(VOTE_PREFIX + lobby.getId(), VOTE_GROUP);
             Lobby event = buildChangeLobbyStatusEvent(lobby);
             publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.MATCH_ENDED_EVENT);
@@ -192,6 +192,7 @@ public class LobbyServiceImpl implements LobbyService {
         return LobbyMap.builder()
                 .id(map.getId())
                 .lobby(Lobby.builder().id(lobbyId).build())
+                .status(map.getStatus())
                 .voteItem(map.getVoteItem())
                 .updatedDatetime(LocalDateTime.now())
                 .build();

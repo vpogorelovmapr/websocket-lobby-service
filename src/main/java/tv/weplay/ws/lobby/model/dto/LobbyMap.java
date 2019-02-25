@@ -20,7 +20,7 @@ public class LobbyMap {
 
     private String vote;
 
-    private LobbyMapType status;
+    private LobbyMapStatus status;
 
     @Relationship("map")
     private VoteItem voteItem;

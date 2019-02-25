@@ -1,6 +1,6 @@
 package tv.weplay.ws.lobby.model.dto;
 
-public enum LobbyMapType {
+public enum LobbyMapStatus {
     NONE,
     USER_PICK,
     SERVER_PICK,

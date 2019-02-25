@@ -13,7 +13,7 @@ public class LobbyMapEntity {
 
     private String vote;
 
-    private LobbyMapType status;
+    private LobbyMapStatus status;
 
     private VoteItem voteItem;
 

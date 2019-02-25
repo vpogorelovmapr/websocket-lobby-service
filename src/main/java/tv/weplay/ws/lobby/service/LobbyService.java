@@ -20,9 +20,9 @@ public interface LobbyService {
 
     void updateMemberStatus(Long lobbyId, Long memberId);
 
-    void voteRandomCard(Long id, LobbyMapType type);
+    void voteRandomCard(Long id, LobbyMapStatus type);
 
-    void voteCardByServer(Long lobbyId, Long cardId, LobbyMapType type);
+    void voteCardByServer(Long lobbyId, Long cardId, LobbyMapStatus type);
 
     void voteCardByUser(Long lobbyId, LobbyMap map, Long userId);
 

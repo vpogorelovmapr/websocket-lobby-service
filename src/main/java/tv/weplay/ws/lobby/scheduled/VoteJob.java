@@ -6,7 +6,7 @@ import org.quartz.JobDataMap;
 import org.quartz.JobExecutionContext;
 import org.springframework.scheduling.quartz.QuartzJobBean;
 import org.springframework.stereotype.Component;
-import tv.weplay.ws.lobby.model.dto.LobbyMapType;
+import tv.weplay.ws.lobby.model.dto.LobbyMapStatus;
 import tv.weplay.ws.lobby.service.LobbyService;
 
 @Slf4j
@@ -25,7 +25,7 @@ public class VoteJob extends QuartzJobBean {
         JobDataMap jobDataMap = jobExecutionContext.getMergedJobDataMap();
         Long lobbyId = jobDataMap.getLong(LOBBY_ID);
 
-        lobbyService.voteRandomCard(lobbyId, LobbyMapType.SERVER_PICK_TIMEOUT);
+        lobbyService.voteRandomCard(lobbyId, LobbyMapStatus.SERVER_PICK_TIMEOUT);
 
     }
 }
