@@ -1,12 +1,19 @@
 package tv.weplay.ws.lobby.service.impl;
 
+import static tv.weplay.ws.lobby.service.impl.RabbitMQEventSenderService.DEFAULT_EXCHANGE;
+import static tv.weplay.ws.lobby.service.impl.SchedulerServiceImpl.*;
+
+import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.quartz.JobDataMap;
 import org.springframework.stereotype.Service;
 import tv.weplay.ws.lobby.common.EventTypes;
-import tv.weplay.ws.lobby.config.properties.RabbitmqQueues;
+import tv.weplay.ws.lobby.config.properties.RabbitmqProperties;
 import tv.weplay.ws.lobby.converter.JsonApiConverter;
 import tv.weplay.ws.lobby.mapper.LobbyMapper;
 import tv.weplay.ws.lobby.model.dto.*;
@@ -16,14 +23,6 @@ import tv.weplay.ws.lobby.scheduled.MatchStartJob;
 import tv.weplay.ws.lobby.scheduled.VoteJob;
 import tv.weplay.ws.lobby.service.LobbyService;
 import tv.weplay.ws.lobby.service.SchedulerService;
-
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static tv.weplay.ws.lobby.service.impl.RabbitMQEventSenderService.DEFAULT_EXCHANGE;
-import static tv.weplay.ws.lobby.service.impl.SchedulerServiceImpl.*;
 
 @Slf4j
 @Service
@@ -35,7 +34,7 @@ public class LobbyServiceImpl implements LobbyService {
     private final LobbyMapper lobbyMapper;
     private final LobbyRepository lobbyRepository;
     private final RabbitMQEventSenderService rabbitMQService;
-    private final RabbitmqQueues rabbitmqQueues;
+    private final RabbitmqProperties rabbitmqProperties;
     private final JsonApiConverter converter;
     private final SchedulerService schedulerService;
 
@@ -47,7 +46,7 @@ public class LobbyServiceImpl implements LobbyService {
         Lobby created = lobbyMapper.toDTO(createdEntity);
         log.info("Created lobby {}", created);
         Lobby event = buildLobbyCreatedEvent(created);
-        publishEventToRabbitMQ(event, rabbitmqQueues.getOutcomingUiEvents(), EventTypes.MATCH_CREATED_EVENT );
+        publishEventToRabbitMQ(event, rabbitmqProperties.getOutcomingUiQueueName(), EventTypes.MATCH_CREATED_EVENT);
         scheduleStartMatchJob(created);
         return created;
     }
@@ -99,6 +98,7 @@ public class LobbyServiceImpl implements LobbyService {
     public void updateMemberStatus(Long lobbyId, Long memberId) {
         log.info("Updating member with id {} for lobby {}", memberId, lobbyId);
         Lobby lobby = findById(lobbyId);
+        log.info("Lobby found: {}", lobby);
         Optional<MatchMember> matchMember = lobby.getMatch().getMembers().stream()
                 .filter(member -> member.getId().equals(memberId))
                 .findAny();
@@ -111,19 +111,19 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     @Override
-    public void voteRandomCard(Long lobbyId, LobbyMapType type) {
+    public void voteRandomCard(Long lobbyId, LobbyMapStatus type) {
         Lobby lobby = findById(lobbyId);
         Long cardId = getRandomCardId(lobby);
         voteCardByServer(lobby.getId(), cardId, type);
     }
 
     @Override
-    public void voteCardByServer(Long lobbyId, Long cardId, LobbyMapType type) {
+    public void voteCardByServer(Long lobbyId, Long cardId, LobbyMapStatus status) {
         Lobby lobby = findById(lobbyId);
         Optional<LobbyMap> lobbyMap = getNextLobbyMap(lobby);
         lobbyMap.ifPresent(map -> {
             map.setVoteItem(new VoteItem(cardId));
-            map.setStatus(type);
+            map.setStatus(status);
             update(lobby);
             LobbyMap event = buildLobbyMapEvent(map, lobbyId);
             publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.VOTE_EVENT);
@@ -138,7 +138,7 @@ public class LobbyServiceImpl implements LobbyService {
         nextLobbyMap.ifPresent(map -> {
             if (!isValidVoteRequest(lobbyMap, lobby, map, userId)) return;
             map.setVoteItem(lobbyMap.getVoteItem());
-            map.setStatus(LobbyMapType.USER_PICK);
+            map.setStatus(LobbyMapStatus.USER_PICK);
             Lobby updated = update(lobby);
             if (!isLastVote(updated)) {
                 rescheduleVoteJob(lobbyId, updated);
@@ -165,7 +165,7 @@ public class LobbyServiceImpl implements LobbyService {
     private void voteRandomCardIfLastVote(Lobby lobby) {
         if (isLastVote(lobby)) {
             lobby.setStatus(LobbyStatus.ENDED);
-            voteRandomCard(lobby.getId(), LobbyMapType.SERVER_PICK);
+            voteRandomCard(lobby.getId(), LobbyMapStatus.SERVER_PICK);
             schedulerService.unschedule(VOTE_PREFIX + lobby.getId(), VOTE_GROUP);
             Lobby event = buildChangeLobbyStatusEvent(lobby);
             publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.MATCH_ENDED_EVENT);
@@ -176,8 +176,9 @@ public class LobbyServiceImpl implements LobbyService {
     private void publishEventToRabbitMQ(Object event, String lobbyId, String type) {
         byte[] data = converter.writeObject(event);
         log.info("Publishing event to rabbitMQ [{}]", new String(data));
-        rabbitMQService.prepareAndSendEvent(rabbitmqQueues.getOutcomingUiEvents(), data, lobbyId, type);
-        rabbitMQService.prepareAndSendEvent(DEFAULT_EXCHANGE, data, rabbitmqQueues.getOutcomingTournamentsEvents(), type);
+        rabbitMQService.prepareAndSendEvent(rabbitmqProperties.getOutcomingUiQueueName(), data, lobbyId, type);
+        rabbitMQService.prepareAndSendEvent(DEFAULT_EXCHANGE, data,
+                rabbitmqProperties.getOutcomingTournamentsQueueName(), type);
     }
 
     private MatchMember buildMatchMemberEvent(MatchMember member, Long lobbyId) {
@@ -192,6 +193,7 @@ public class LobbyServiceImpl implements LobbyService {
         return LobbyMap.builder()
                 .id(map.getId())
                 .lobby(Lobby.builder().id(lobbyId).build())
+                .status(map.getStatus())
                 .voteItem(map.getVoteItem())
                 .updatedDatetime(LocalDateTime.now())
                 .build();

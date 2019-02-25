@@ -10,7 +10,7 @@
     </parent>
     <groupId>tv.weplay.ws.lobby</groupId>
     <artifactId>websocket-lobby-service</artifactId>
-    <version>0.0.5</version>
+    <version>0.0.6</version>
     <name>websocket-lobby-service</name>
     <description>Websocket lobby server</description>
 
@@ -21,6 +21,7 @@
         <flyway.version>5.2.1</flyway.version>
         <spring-cloud.version>Greenwich.RELEASE</spring-cloud.version>
         <security.lib>1.0.13</security.lib>
+        <guava.version>27.0.1-jre</guava.version>
     </properties>
 
     <dependencyManagement>
@@ -93,6 +94,12 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>27.0.1-jre</version>
         </dependency>
 
         <dependency>
