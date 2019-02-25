@@ -23,10 +23,10 @@ spring:
 rabbitmq:
   dead-letter-exchange-name: lobby_dlx_dev
   dead-letter-queue-name: lobby_dlq_dev
-  incoming-tournaments-events: tournaments_lobby_create_dev
-  outcoming-tournaments-events: tournaments_lobby_events_dev
-  incoming-ui-events: lobby_in_dev
-  outcoming-ui-events: lobby_out_dev
+  incoming-tournaments-queue-name: tournaments_lobby_create_dev
+  outcoming-tournaments-queue-name: tournaments_lobby_events_dev
+  incoming-ui-queue-name: lobby_in_dev
+  outcoming-ui-queue-name: lobby_out_dev
 
 
 management:

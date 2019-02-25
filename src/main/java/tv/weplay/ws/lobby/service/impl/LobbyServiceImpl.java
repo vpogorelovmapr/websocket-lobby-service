@@ -46,7 +46,7 @@ public class LobbyServiceImpl implements LobbyService {
         Lobby created = lobbyMapper.toDTO(createdEntity);
         log.info("Created lobby {}", created);
         Lobby event = buildLobbyCreatedEvent(created);
-        publishEventToRabbitMQ(event, rabbitmqProperties.getOutcomingUiEvents(), EventTypes.MATCH_CREATED_EVENT);
+        publishEventToRabbitMQ(event, rabbitmqProperties.getOutcomingUiQueueName(), EventTypes.MATCH_CREATED_EVENT);
         scheduleStartMatchJob(created);
         return created;
     }
@@ -176,9 +176,9 @@ public class LobbyServiceImpl implements LobbyService {
     private void publishEventToRabbitMQ(Object event, String lobbyId, String type) {
         byte[] data = converter.writeObject(event);
         log.info("Publishing event to rabbitMQ [{}]", new String(data));
-        rabbitMQService.prepareAndSendEvent(rabbitmqProperties.getOutcomingUiEvents(), data, lobbyId, type);
+        rabbitMQService.prepareAndSendEvent(rabbitmqProperties.getOutcomingUiQueueName(), data, lobbyId, type);
         rabbitMQService.prepareAndSendEvent(DEFAULT_EXCHANGE, data,
-                rabbitmqProperties.getOutcomingTournamentsEvents(), type);
+                rabbitmqProperties.getOutcomingTournamentsQueueName(), type);
     }
 
     private MatchMember buildMatchMemberEvent(MatchMember member, Long lobbyId) {

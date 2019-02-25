@@ -11,13 +11,13 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "rabbitmq")
 public class RabbitmqProperties {
 
-    private String incomingTournamentsEvents;
+    private String incomingTournamentsQueueName;
 
-    private String outcomingTournamentsEvents;
+    private String outcomingTournamentsQueueName;
 
-    private String incomingUiEvents;
+    private String incomingUiQueueName;
 
-    private String outcomingUiEvents;
+    private String outcomingUiQueueName;
 
     private String deadLetterExchangeName;
 

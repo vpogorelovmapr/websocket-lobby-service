@@ -22,15 +22,14 @@ public class EventListener {
     private final ObjectMapper objectMapper;
     private final JsonApiConverter converter;
 
-    @RabbitListener(queues = "#{rabbitmqProperties.incomingTournamentsEvents}")
+    @RabbitListener(queues = "#{rabbitmqProperties.incomingTournamentsQueueName}")
     public void handleLobbyCreationEvent(byte[] rawEvent) throws Exception {
         log.info("Raw event received: {}", new String(rawEvent));
         Event event = objectMapper.readValue(rawEvent, Event.class);
         handleLobbyCreatedEvent(event);
-
     }
 
-    @RabbitListener(queues = "#{rabbitmqProperties.incomingUiEvents}")
+    @RabbitListener(queues = "#{rabbitmqProperties.incomingUiQueueName}")
     public void handleUIEvent(String rawEvent, @Header("user_id") Long userId) throws Exception {
         log.info("Raw event received: {}", rawEvent);
         Event event = objectMapper.readValue(rawEvent, Event.class);

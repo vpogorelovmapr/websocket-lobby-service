@@ -23,7 +23,7 @@ public class RabbitMQConfig {
 
     @Bean
     public Queue frontendQueue() {
-        return new Queue(rabbitmqProperties.getIncomingUiEvents(), true, false, false, dlxArgs());
+        return new Queue(rabbitmqProperties.getIncomingUiQueueName(), true, false, false, dlxArgs());
     }
 
     @Bean
