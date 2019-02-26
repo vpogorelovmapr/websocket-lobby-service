@@ -44,9 +44,13 @@ public class EventListener {
     }
 
     private void handleLobbyCreatedEvent(Event event) {
-        if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CREATED)) {
-            Lobby lobby = converter.readDocument(event.getEventData().toString(), Lobby.class).get();
-            lobbyService.create(lobby);
+        try {
+            if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CREATED)) {
+                Lobby lobby = converter.readDocument(event.getEventData().toString(), Lobby.class).get();
+                lobbyService.create(lobby);
+            }
+        } catch (Exception e) {
+            log.info("Invalid lobby event", e);
         }
     }
 
