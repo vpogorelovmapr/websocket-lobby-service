@@ -4,6 +4,9 @@ spring:
     username: daemon
     password: Wepl@y-d@Em0n
     virtual-host: local
+    listener:
+      simple:
+        default-requeue-rejected: false
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
     url: jdbc:mysql://localhost:3306/lobby_dev
