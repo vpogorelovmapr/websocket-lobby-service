@@ -16,7 +16,7 @@ public interface LobbyService {
 
     List<Lobby> findAll();
 
-    void startMatch(Long lobbyId);
+    void startVoting(Long lobbyId);
 
     void updateMemberStatus(Long lobbyId, Long memberId);
 
@@ -25,6 +25,4 @@ public interface LobbyService {
     void voteCardByServer(Long lobbyId, Long cardId, LobbyMapStatus type);
 
     void voteCardByUser(Long lobbyId, LobbyMap map, Long userId);
-
-    boolean isLastVote(Lobby lobby);
 }
