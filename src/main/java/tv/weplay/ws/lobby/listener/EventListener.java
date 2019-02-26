@@ -56,7 +56,6 @@ public class EventListener {
 
     private void handleUIEvent(@Header("user_id") Long userId, Event event) {
         if (event.getEventMetaData().getType().equals(EventTypes.MEMBER_EVENT)) {
-            log.info("Raw event: {}", event);
             MatchMember member = converter.readDocument(event.getEventData().toString(), MatchMember.class).get();
             log.info("Member: {}", member);
             lobbyService.updateMemberStatus(member.getLobby().getId(), member.getId());

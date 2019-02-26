@@ -77,7 +77,7 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     @Override
-    public void startMatch(Long lobbyId) {
+    public void startVoting(Long lobbyId) {
         log.info("Start match for lobby with id {} ", lobbyId);
         Lobby lobby = findById(lobbyId);
         LobbyStatus status = allMatchMemberPresent(lobby) ? LobbyStatus.ONGOING : LobbyStatus.CANCELED;
@@ -90,7 +90,13 @@ public class LobbyServiceImpl implements LobbyService {
         publishEventToRabbitMQ(event, lobby.getId().toString(), type);
 
         if (status.equals(LobbyStatus.ONGOING)) {
-            scheduleVoteJob(lobbyId, lobby.getSettings().getVoteTime());
+            if (isVotingCompleted(lobby)) {
+                lobby.setStatus(LobbyStatus.ENDED);
+                Lobby endEvent = buildChangeLobbyStatusEvent(lobby);
+                publishEventToRabbitMQ(endEvent, lobby.getId().toString(), EventTypes.MATCH_ENDED_EVENT);
+            } else {
+                scheduleVoteJob(lobbyId, lobby.getSettings().getVoteTime());
+            }
         }
     }
 
@@ -136,6 +142,7 @@ public class LobbyServiceImpl implements LobbyService {
         Lobby lobby = findById(lobbyId);
         Optional<LobbyMap> nextLobbyMap = getNextLobbyMap(lobby);
         nextLobbyMap.ifPresent(map -> {
+            //TODO: Send error message to rabbitmq
             if (!isValidVoteRequest(lobbyMap, lobby, map, userId)) return;
             map.setVoteItem(lobbyMap.getVoteItem());
             map.setStatus(LobbyMapStatus.USER_PICK);
@@ -154,8 +161,13 @@ public class LobbyServiceImpl implements LobbyService {
         scheduleVoteJob(lobbyId, lobby.getSettings().getVoteTime());
     }
 
-    @Override
-    public boolean isLastVote(Lobby lobby) {
+    private boolean isVotingCompleted(Lobby lobby) {
+        return lobby.getLobbyMap().stream()
+                .map(LobbyMap::getVoteItem)
+                .noneMatch(Objects::isNull);
+    }
+
+    private boolean isLastVote(Lobby lobby) {
         return lobby.getLobbyMap().stream()
                 .map(LobbyMap::getVoteItem)
                 .filter(Objects::isNull)
