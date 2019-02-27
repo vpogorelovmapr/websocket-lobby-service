@@ -46,7 +46,8 @@ public class LobbyServiceImpl implements LobbyService {
         Lobby created = lobbyMapper.toDTO(createdEntity);
         log.info("Created lobby {}", created);
         Lobby event = buildLobbyCreatedEvent(created);
-        publishEventToRabbitMQ(event, rabbitmqProperties.getOutcomingUiQueueName(), EventTypes.MATCH_CREATED_EVENT);
+        String routingKey = buildInvitesRoutingKey(lobby);
+        publishInvitesToRabbitMQ(event, routingKey, EventTypes.MATCH_CREATED_EVENT);
         scheduleStartMatchJob(created);
         return created;
     }
@@ -185,12 +186,29 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     @SneakyThrows
-    private void publishEventToRabbitMQ(Object event, String lobbyId, String type) {
+    private void publishInvitesToRabbitMQ(Object event, String routingKey, String type) {
         byte[] data = converter.writeObject(event);
         log.info("Publishing event to rabbitMQ [{}]", new String(data));
-        rabbitMQService.prepareAndSendEvent(rabbitmqProperties.getOutcomingUiQueueName(), data, lobbyId, type);
+        rabbitMQService.prepareAndSendEvent(rabbitmqProperties.getOutcomingPrivateQueueName(), data,
+                routingKey, type);
         rabbitMQService.prepareAndSendEvent(DEFAULT_EXCHANGE, data,
                 rabbitmqProperties.getOutcomingTournamentsQueueName(), type);
+    }
+
+    @SneakyThrows
+    private void publishEventToRabbitMQ(Object event, String routingKey, String type) {
+        byte[] data = converter.writeObject(event);
+        log.info("Publishing event to rabbitMQ [{}]", new String(data));
+        rabbitMQService.prepareAndSendEvent(rabbitmqProperties.getOutcomingUiQueueName(), data, routingKey, type);
+        rabbitMQService.prepareAndSendEvent(DEFAULT_EXCHANGE, data,
+                rabbitmqProperties.getOutcomingTournamentsQueueName(), type);
+    }
+
+    private String buildInvitesRoutingKey(Lobby lobby) {
+        return lobby.getMatch().getMembers().stream()
+                .map(MatchMember::getId)
+                .map(Object::toString)
+                .collect(Collectors.joining(","));
     }
 
     private MatchMember buildMatchMemberEvent(MatchMember member, Long lobbyId) {

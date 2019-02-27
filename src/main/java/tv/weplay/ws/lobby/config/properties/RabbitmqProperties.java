@@ -15,6 +15,8 @@ public class RabbitmqProperties {
 
     private String outcomingTournamentsQueueName;
 
+    private String outcomingPrivateQueueName;
+
     private String incomingUiQueueName;
 
     private String outcomingUiQueueName;

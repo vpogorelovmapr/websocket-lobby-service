@@ -26,6 +26,7 @@ spring:
 rabbitmq:
   dead-letter-exchange-name: lobby_dlx_dev
   dead-letter-queue-name: lobby_dlq_dev
+  outcoming-private-queue-name: private_out_dev
   incoming-tournaments-queue-name: tournaments_lobby_create_dev
   outcoming-tournaments-queue-name: tournaments_lobby_events_dev
   incoming-ui-queue-name: lobby_in_dev
