@@ -22,6 +22,11 @@
         <spring-cloud.version>Greenwich.RELEASE</spring-cloud.version>
         <security.lib>1.0.13</security.lib>
         <guava.version>27.0.1-jre</guava.version>
+        <testcontainers.version>1.9.1</testcontainers.version>
+        <random-beans.version>3.7.0</random-beans.version>
+        <guava.version>27.0.1-jre</guava.version>
+        <jsonapi-converter.version>0.9</jsonapi-converter.version>
+        <mockito.version>2.0.2-beta</mockito.version>
     </properties>
 
     <dependencyManagement>
@@ -99,13 +104,19 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>27.0.1-jre</version>
+            <version>${guava.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers</artifactId>
+            <version>${testcontainers.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.github.benas</groupId>
             <artifactId>random-beans</artifactId>
-            <version>3.7.0</version>
+            <version>${random-beans.version}</version>
         </dependency>
 
         <dependency>
@@ -126,7 +137,14 @@
         <dependency>
             <groupId>com.github.jasminb</groupId>
             <artifactId>jsonapi-converter</artifactId>
-            <version>0.9</version>
+            <version>${jsonapi-converter.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -145,6 +163,17 @@
             </resource>
         </resources>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.18.1</version>
+                <configuration>
+                    <goal>package</goal>
+                    <includes>
+                        <include>**/**TestSuite.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

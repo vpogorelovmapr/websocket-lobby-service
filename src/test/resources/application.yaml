@@ -1,0 +1,66 @@
+spring:
+  rabbitmq:
+    host: localhost
+    port: 15672
+    username: daemon
+    password: Wepl@y-d@Em0n
+    virtual-host: local
+    listener:
+      simple:
+        default-requeue-rejected: false
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://localhost:13306/lobby_test
+    username: user
+    password: pass
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL5InnoDBDialect
+    hibernate:
+      ddl-auto: validate
+  quartz:
+    job-store-type: jdbc
+    properties:
+      org.quartz.threadPool.threadCount: 10
+
+rabbitmq:
+  dead-letter-exchange-name: lobby_dlx_dev
+  dead-letter-queue-name: lobby_dlq_dev
+  incoming-tournaments-queue-name: tournaments_lobby_create_dev
+  outcoming-tournaments-queue-name: tournaments_lobby_events_dev
+  incoming-ui-queue-name: lobby_in_dev
+  outcoming-ui-queue-name: lobby_out_dev
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: info, refresh, health
+      base-path:
+
+redis:
+  host: localhost
+  port: 16379
+
+eureka:
+  instance:
+    preferIpAddress: true
+  client:
+    serviceUrl:
+      defaultZone: ${eureka.uri:http://localhost:8761}/eureka/
+    healthcheck:
+      enabled: false
+    register-with-eureka: true
+    fetch-registry: true
+
+info:
+  app:
+    name: ${spring.application.name}
+    description: Websocket lobby Service
+    version: test
+    artifact: test
+    messageProtocolVersion: "1"
+
+
