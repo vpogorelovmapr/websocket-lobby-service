@@ -206,7 +206,9 @@ public class LobbyServiceImpl implements LobbyService {
 
     private String buildInvitesRoutingKey(Lobby lobby) {
         return lobby.getMatch().getMembers().stream()
-                .map(MatchMember::getId)
+                .map(MatchMember::getTournamentMember)
+                .map(TournamentMember::getMember)
+                .map(Member::getId)
                 .map(Object::toString)
                 .collect(Collectors.joining(","));
     }

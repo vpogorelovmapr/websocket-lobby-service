@@ -20,7 +20,7 @@ public class MatchMemberMapperImpl implements MatchMemberMapper {
         }
         return MatchMember.builder()
                 .id(entity.getId())
-                .member(entity.getMember())
+                .tournamentMember(entity.getTournamentMember())
                 .participationType(entity.getParticipationType())
                 .status(entity.getStatus())
                 .tournament(entity.getTournament())
@@ -34,7 +34,7 @@ public class MatchMemberMapperImpl implements MatchMemberMapper {
         }
         return MatchMemberEntity.builder()
                 .id(dto.getId())
-                .member(dto.getMember())
+                .tournamentMember(dto.getTournamentMember())
                 .participationType(dto.getParticipationType())
                 .status(dto.getStatus())
                 .tournament(dto.getTournament())

@@ -1,7 +1,7 @@
 package tv.weplay.ws.lobby.model.entity;
 
 import lombok.*;
-import tv.weplay.ws.lobby.model.dto.Node;
+import tv.weplay.ws.lobby.model.dto.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,9 +24,9 @@ public class MatchEntity {
 
     private String status;
 
-    private MatchMemberEntity player1;
+    private TournamentMember player1;
 
-    private MatchMemberEntity player2;
+    private TournamentMember player2;
 
     private Node node;
 

@@ -31,10 +31,10 @@ public class Match {
     private String status;
 
     @Relationship("player1")
-    private MatchMember player1;
+    private TournamentMember player1;
 
     @Relationship("player2")
-    private MatchMember player2;
+    private TournamentMember player2;
 
     @Relationship("node")
     private Node node;

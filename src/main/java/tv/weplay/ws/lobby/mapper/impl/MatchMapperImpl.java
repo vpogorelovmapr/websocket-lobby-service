@@ -26,8 +26,8 @@ public class MatchMapperImpl implements MatchMapper {
                 .score1(entity.getScore1())
                 .node(entity.getNode())
                 .status(entity.getStatus())
-                .player1(matchMemberMapper.toDTO(entity.getPlayer1()))
-                .player2(matchMemberMapper.toDTO(entity.getPlayer2()))
+                .player1(entity.getPlayer1())
+                .player2(entity.getPlayer2())
                 .members(matchMemberMapper.toDTOs(entity.getMembers()))
                 .build();
     }
@@ -45,8 +45,8 @@ public class MatchMapperImpl implements MatchMapper {
                 .score1(dto.getScore1())
                 .node(dto.getNode())
                 .status(dto.getStatus())
-                .player1(matchMemberMapper.toEntity(dto.getPlayer1()))
-                .player2(matchMemberMapper.toEntity(dto.getPlayer2()))
+                .player1(dto.getPlayer1())
+                .player2(dto.getPlayer2())
                 .members(matchMemberMapper.toEntities(dto.getMembers()))
                 .build();
     }
