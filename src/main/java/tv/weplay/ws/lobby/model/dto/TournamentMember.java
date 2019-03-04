@@ -17,7 +17,7 @@ public class TournamentMember {
 
     private String status;
 
-    @Relationship("tournamentMember")
+    @Relationship("member")
     private Member member;
 
 }
