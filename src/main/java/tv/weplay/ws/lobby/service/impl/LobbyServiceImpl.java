@@ -1,5 +1,10 @@
 package tv.weplay.ws.lobby.service.impl;
 
+import static java.util.stream.Collectors.counting;
+import static java.util.stream.Collectors.groupingBy;
+import static tv.weplay.ws.lobby.model.dto.TournamentMemberRole.CAPTAIN;
+import static tv.weplay.ws.lobby.model.dto.TournamentMemberRole.CORE;
+import static tv.weplay.ws.lobby.model.dto.TournamentMemberRole.STAND_IN;
 import static tv.weplay.ws.lobby.service.impl.RabbitMQEventSenderService.DEFAULT_EXCHANGE;
 import static tv.weplay.ws.lobby.service.impl.SchedulerServiceImpl.*;
 
@@ -297,7 +302,37 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     private boolean allMatchMemberPresent(Lobby lobby) {
+        if (!allCaptainsPresent(lobby)) {
+            log.info("Captains are not online. Lobby: [{}]", lobby.getId());
+            return false;
+        }
+        Map<String, Long> expectedCoreMemberCount = calculateCoreMemberCount(lobby);
+        Map<String, Long> actualCoreMemberCount = calculateAuxiliaryMemberCount(lobby);
+
+        return expectedCoreMemberCount.entrySet().stream()
+                .allMatch(entry -> {
+                    log.info("Team: [{}]. Expected core number: {}. Actual: {}", entry.getKey(), entry.getValue(), actualCoreMemberCount.get(entry.getKey()));
+                    return entry.getValue() <= actualCoreMemberCount.get(entry.getKey());
+                });
+    }
+
+    private Map<String, Long> calculateCoreMemberCount(Lobby lobby) {
         return lobby.getMatch().getMembers().stream()
+                .filter(member -> member.getTournamentMember().getRole().equals(CORE))
+                .collect(groupingBy(MatchMember::getParticipationType, counting()));
+    }
+
+    private Map<String, Long> calculateAuxiliaryMemberCount(Lobby lobby) {
+        return lobby.getMatch().getMembers().stream()
+                .filter(member -> member.getStatus().equals(MemberStatus.ONLINE))
+                .filter(member -> member.getTournamentMember().getRole().equals(CORE) ||
+                        member.getTournamentMember().getRole().equals(STAND_IN))
+                .collect(groupingBy(MatchMember::getParticipationType, counting()));
+    }
+
+    private boolean allCaptainsPresent(Lobby lobby) {
+        return lobby.getMatch().getMembers().stream()
+                .filter(member -> member.getTournamentMember().getRole().equals(CAPTAIN))
                 .map(MatchMember::getStatus)
                 .noneMatch(status -> status.equals(MemberStatus.OFFLINE));
     }
