@@ -24,8 +24,8 @@ public class MatchMember {
     @Relationship("tournament")
     private Tournament tournament;
 
-    @Relationship("member")
-    private Member member;
+    @Relationship("tournament_member")
+    private TournamentMember tournamentMember;
 
     @Relationship("lobby")
     private Lobby lobby;
