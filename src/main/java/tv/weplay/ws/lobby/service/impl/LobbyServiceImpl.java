@@ -311,6 +311,10 @@ public class LobbyServiceImpl implements LobbyService {
 
         return expectedCoreMemberCount.entrySet().stream()
                 .allMatch(entry -> {
+                    if (actualCoreMemberCount.get(entry.getKey()) == null) {
+                        log.info("Team: [{}]. Core members are not present", entry.getKey());
+                        return false;
+                    }
                     log.info("Team: [{}]. Expected core number: {}. Actual: {}", entry.getKey(), entry.getValue(), actualCoreMemberCount.get(entry.getKey()));
                     return entry.getValue() <= actualCoreMemberCount.get(entry.getKey());
                 });
