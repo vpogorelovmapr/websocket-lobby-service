@@ -26,7 +26,8 @@ import tv.weplay.ws.lobby.model.entity.LobbyEntity;
 import tv.weplay.ws.lobby.repository.LobbyRepository;
 import tv.weplay.ws.lobby.scheduled.MatchStartJob;
 import tv.weplay.ws.lobby.scheduled.VoteJob;
-import tv.weplay.ws.lobby.service.*;
+import tv.weplay.ws.lobby.service.LobbyService;
+import tv.weplay.ws.lobby.service.SchedulerService;
 
 @Slf4j
 @Service
@@ -37,7 +38,7 @@ public class LobbyServiceImpl implements LobbyService {
 
     private final LobbyMapper lobbyMapper;
     private final LobbyRepository lobbyRepository;
-    private final EventSenderService rabbitMQService;
+    private final RabbitMQEventSenderService rabbitMQService;
     private final RabbitmqProperties rabbitmqProperties;
     private final JsonApiConverter converter;
     private final SchedulerService schedulerService;
@@ -49,13 +50,10 @@ public class LobbyServiceImpl implements LobbyService {
         LobbyEntity createdEntity = lobbyRepository.save(entity);
         Lobby created = lobbyMapper.toDTO(createdEntity);
         log.info("Created lobby {}", created);
-
         Lobby event = buildLobbyCreatedEvent(created);
         String routingKey = buildInvitesRoutingKey(lobby);
         publishInvitesToRabbitMQ(event, routingKey, EventTypes.MATCH_CREATED_EVENT);
-
         scheduleStartMatchJob(created);
-
         return created;
     }
 
@@ -75,12 +73,6 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     @Override
-    public void deleteAll() {
-        log.info("Delete all lobbies");
-        lobbyRepository.deleteAll();
-    }
-
-    @Override
     public Lobby findById(Long id) {
         return lobbyMapper.toDTO(lobbyRepository.findById(id).orElse(null));
     }
@@ -92,7 +84,7 @@ public class LobbyServiceImpl implements LobbyService {
 
     @Override
     public void startVoting(Long lobbyId) {
-        log.info("Start voting. Lobby id: {} ", lobbyId);
+        log.info("Start match for lobby with id {} ", lobbyId);
         Lobby lobby = findById(lobbyId);
         LobbyStatus status = allMatchMemberPresent(lobby) ? LobbyStatus.ONGOING : LobbyStatus.CANCELED;
         String type = status.equals(LobbyStatus.ONGOING) ? EventTypes.MATCH_STARTED_EVENT :
@@ -164,10 +156,8 @@ public class LobbyServiceImpl implements LobbyService {
             if (!isLastVote(updated)) {
                 rescheduleVoteJob(lobbyId, updated);
             }
-
             LobbyMap event = buildLobbyMapEvent(map, lobbyId);
             publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.VOTE_EVENT);
-
             voteRandomCardIfLastVote(lobby);
         });
     }
@@ -316,8 +306,8 @@ public class LobbyServiceImpl implements LobbyService {
             log.info("Captains are not online. Lobby: [{}]", lobby.getId());
             return false;
         }
-        Map<ParticipationType, Long> expectedCoreMemberCount = calculateCoreMemberCount(lobby);
-        Map<ParticipationType, Long> actualCoreMemberCount = calculateAuxiliaryMemberCount(lobby);
+        Map<String, Long> expectedCoreMemberCount = calculateCoreMemberCount(lobby);
+        Map<String, Long> actualCoreMemberCount = calculateAuxiliaryMemberCount(lobby);
 
         return expectedCoreMemberCount.entrySet().stream()
                 .allMatch(entry -> {
@@ -326,13 +316,13 @@ public class LobbyServiceImpl implements LobbyService {
                 });
     }
 
-    private Map<ParticipationType, Long> calculateCoreMemberCount(Lobby lobby) {
+    private Map<String, Long> calculateCoreMemberCount(Lobby lobby) {
         return lobby.getMatch().getMembers().stream()
                 .filter(member -> member.getTournamentMember().getRole().equals(CORE))
                 .collect(groupingBy(MatchMember::getParticipationType, counting()));
     }
 
-    private Map<ParticipationType, Long> calculateAuxiliaryMemberCount(Lobby lobby) {
+    private Map<String, Long> calculateAuxiliaryMemberCount(Lobby lobby) {
         return lobby.getMatch().getMembers().stream()
                 .filter(member -> member.getStatus().equals(MemberStatus.ONLINE))
                 .filter(member -> member.getTournamentMember().getRole().equals(CORE) ||

@@ -22,58 +22,13 @@ public class RabbitMQConfiguration {
     }
 
     @Bean
-    public Queue tournamentIncomingQueue() {
+    public Queue tournamentQueue() {
         return new Queue(rabbitmqProperties.getIncomingTournamentsQueueName(), true, false, false, dlxArgs());
     }
 
     @Bean
-    public Queue incomingUIQueue() {
+    public Queue frontendQueue() {
         return new Queue(rabbitmqProperties.getIncomingUiQueueName(), true, false, false, dlxArgs());
-    }
-
-    @Bean
-    public Queue outcomingTournamentQueue() {
-        return new Queue(rabbitmqProperties.getOutcomingTournamentsQueueName(), true, false, false, dlxArgs());
-    }
-
-    @Bean
-    public Queue outcomingUIQueue() {
-        return new Queue(rabbitmqProperties.getOutcomingUiQueueName(), true, false, false, dlxArgs());
-    }
-
-    @Bean
-    public Queue privateQueue() {
-        return new Queue(rabbitmqProperties.getOutcomingPrivateQueueName(), true, false, false, dlxArgs());
-    }
-
-    @Bean
-    public TopicExchange outcomingTournamentExchange() {
-        return new TopicExchange(rabbitmqProperties.getOutcomingTournamentsQueueName());
-    }
-
-    @Bean
-    public TopicExchange outcomingUIExchange() {
-        return new TopicExchange(rabbitmqProperties.getOutcomingUiQueueName());
-    }
-
-    @Bean
-    public TopicExchange privateExchange() {
-        return new TopicExchange(rabbitmqProperties.getOutcomingPrivateQueueName());
-    }
-
-    @Bean
-    public Binding outcomingTournamentBinding(Queue outcomingTournamentQueue, TopicExchange outcomingTournamentExchange) {
-        return BindingBuilder.bind(outcomingTournamentQueue).to(outcomingTournamentExchange).with(rabbitmqProperties.getDeadLetterQueueName());
-    }
-
-    @Bean
-    public Binding outcomingUIBinding(Queue outcomingUIQueue, TopicExchange outcomingUIExchange) {
-        return BindingBuilder.bind(outcomingUIQueue).to(outcomingUIExchange).with("#");
-    }
-
-    @Bean
-    public Binding privateBinding(Queue privateQueue, TopicExchange privateExchange) {
-        return BindingBuilder.bind(privateQueue).to(privateExchange).with("#");
     }
 
     @Bean

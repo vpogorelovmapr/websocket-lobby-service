@@ -12,8 +12,6 @@ public interface LobbyService {
 
     void delete(Long id);
 
-    void deleteAll();
-
     Lobby findById(Long id);
 
     List<Lobby> findAll();

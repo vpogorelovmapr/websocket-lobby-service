@@ -13,7 +13,7 @@ public class MatchMemberEntity {
 
     private MemberStatus status;
 
-    private ParticipationType participationType;
+    private String participationType;
 
     private Tournament tournament;
 
