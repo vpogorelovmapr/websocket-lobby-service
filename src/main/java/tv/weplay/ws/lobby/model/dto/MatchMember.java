@@ -19,7 +19,7 @@ public class MatchMember {
     private MemberStatus status;
 
     @JsonProperty("participation_type")
-    private String participationType;
+    private ParticipationType participationType;
 
     @Relationship("tournament")
     private Tournament tournament;

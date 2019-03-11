@@ -1,7 +1,5 @@
 package tv.weplay.ws.lobby.service.impl;
 
-import java.util.HashMap;
-import java.util.Map;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -14,6 +12,8 @@ import tv.weplay.ws.lobby.model.dto.*;
 import tv.weplay.ws.lobby.service.EventSenderService;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -50,6 +50,18 @@ public class RabbitMQEventSenderService implements EventSenderService {
     @Override
     public void prepareAndSendEvent(String exchange, byte[] data, String routeKey, String type) {
         prepareAndSendEvent(exchange, new String(data), routeKey, type, new HashMap<>());
+    }
+
+    @Override
+    public String receiveAndConvert(String queueName, Long timeout) {
+        String response = (String) rabbitTemplate.receiveAndConvert(queueName, timeout);
+        return getResponseBody(response);
+    }
+
+    @SneakyThrows
+    private String getResponseBody(String response) {
+        Event event = objectMapper.readValue(response, Event.class);
+        return event.getEventData().toString();
     }
 
     @SneakyThrows
