@@ -24,4 +24,6 @@ public class RabbitmqProperties {
     private String deadLetterExchangeName;
 
     private String deadLetterQueueName;
+
+    private String privateExchangeName;
 }
