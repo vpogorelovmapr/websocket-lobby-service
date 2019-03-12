@@ -10,7 +10,7 @@
     </parent>
     <groupId>tv.weplay.ws.lobby</groupId>
     <artifactId>websocket-lobby-service</artifactId>
-    <version>0.0.11</version>
+    <version>0.0.12</version>
     <name>websocket-lobby-service</name>
     <description>Websocket lobby server</description>
 
@@ -22,7 +22,7 @@
         <spring-cloud.version>Greenwich.RELEASE</spring-cloud.version>
         <security.lib>1.0.13</security.lib>
         <guava.version>27.0.1-jre</guava.version>
-        <testcontainers.version>1.9.1</testcontainers.version>
+        <testcontainers.version>1.10.6</testcontainers.version>
         <random-beans.version>3.7.0</random-beans.version>
         <guava.version>27.0.1-jre</guava.version>
         <jsonapi-converter.version>0.9</jsonapi-converter.version>

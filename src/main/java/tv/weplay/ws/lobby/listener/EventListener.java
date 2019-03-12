@@ -2,12 +2,10 @@ package tv.weplay.ws.lobby.listener;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
-import pro.javatar.security.jwt.TokenVerifier;
 import tv.weplay.ws.lobby.common.EventTypes;
 import tv.weplay.ws.lobby.converter.JsonApiConverter;
 import tv.weplay.ws.lobby.model.dto.*;
@@ -23,8 +21,8 @@ public class EventListener {
     private final JsonApiConverter converter;
 
     @RabbitListener(queues = "#{rabbitmqProperties.incomingTournamentsQueueName}")
-    public void handleLobbyCreationEvent(byte[] rawEvent) throws Exception {
-        log.info("Raw event received: {}", new String(rawEvent));
+    public void handleLobbyCreationEvent(String rawEvent) throws Exception {
+        log.info("Raw event received: {}", rawEvent);
         Event event = objectMapper.readValue(rawEvent, Event.class);
         handleLobbyCreatedEvent(event);
     }
@@ -34,13 +32,6 @@ public class EventListener {
         log.info("Raw event received: {}", rawEvent);
         Event event = objectMapper.readValue(rawEvent, Event.class);
         handleUIEvent(userId, event);
-    }
-
-    @SneakyThrows
-    private Long getUserId(String authorization) {
-        String token = authorization.split(" ")[1];
-        TokenVerifier verifier = TokenVerifier.create(token);
-        return verifier.getToken().getUserId();
     }
 
     private void handleLobbyCreatedEvent(Event event) {
