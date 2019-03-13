@@ -35,14 +35,10 @@ public class EventListener {
     }
 
     private void handleLobbyCreatedEvent(Event event) {
-        try {
-            if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CREATED)) {
-                Lobby lobby = converter.readDocument(event.getEventData().toString(), Lobby.class)
-                        .get();
-                lobbyService.create(lobby);
-            }
-        } catch (Exception e) {
-            log.info("Invalid lobby event", e);
+        if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CREATED)) {
+            Lobby lobby = converter.readDocument(event.getEventData().toString(), Lobby.class)
+                    .get();
+            lobbyService.create(lobby);
         }
     }
 
@@ -50,7 +46,6 @@ public class EventListener {
         if (event.getEventMetaData().getType().equals(EventTypes.MEMBER_EVENT)) {
             MatchMember member = converter
                     .readDocument(event.getEventData().toString(), MatchMember.class).get();
-            log.info("Member: {}", member);
             lobbyService.updateMemberStatus(member.getLobby().getId(), member.getId());
         } else if (event.getEventMetaData().getType().equals(EventTypes.VOTE_EVENT)) {
             LobbyMap map = converter.readDocument(event.getEventData().toString(), LobbyMap.class)
