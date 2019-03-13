@@ -1,12 +1,12 @@
 package tv.weplay.ws.lobby.model.entity;
 
+import java.time.LocalDateTime;
+import java.util.List;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
-import tv.weplay.ws.lobby.model.dto.*;
-
-import java.time.LocalDateTime;
-import java.util.List;
+import tv.weplay.ws.lobby.model.dto.LobbyStatus;
+import tv.weplay.ws.lobby.model.dto.Settings;
 
 @Data
 @Builder(toBuilder = true)

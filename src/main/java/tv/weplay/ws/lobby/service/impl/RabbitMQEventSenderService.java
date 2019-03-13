@@ -1,6 +1,9 @@
 package tv.weplay.ws.lobby.service.impl;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
@@ -10,10 +13,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import tv.weplay.ws.lobby.model.dto.*;
 import tv.weplay.ws.lobby.service.EventSenderService;
-
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
 
 @Slf4j
 @Service
@@ -35,15 +34,18 @@ public class RabbitMQEventSenderService implements EventSenderService {
     private String messageProtocolVersion;
 
     @Override
-    public void prepareAndSendEvent(String exchange, String data, String routeKey, String type, Map<String, ?> headers) {
+    public void prepareAndSendEvent(String exchange, String data, String routeKey, String type,
+            Map<String, ?> headers) {
         String payload = buildRabbitMQEvent(data, type);
         log.info("Event to be sent: [{}]", payload);
-        rabbitTemplate.convertAndSend(exchange, routeKey, payload, message -> setHeaders(headers, message));
+        rabbitTemplate.convertAndSend(exchange, routeKey, payload,
+                message -> setHeaders(headers, message));
         log.info("Message that has been successfully sent: [{}]", payload);
     }
 
     @Override
-    public void prepareAndSendEvent(String exchange, byte[] data, String routeKey, String type, Map<String, ?> headers) {
+    public void prepareAndSendEvent(String exchange, byte[] data, String routeKey, String type,
+            Map<String, ?> headers) {
         prepareAndSendEvent(exchange, new String(data), routeKey, type, headers);
     }
 

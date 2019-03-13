@@ -1,13 +1,12 @@
 package tv.weplay.ws.lobby.mapper.impl;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tv.weplay.ws.lobby.mapper.MatchMemberMapper;
 import tv.weplay.ws.lobby.model.dto.MatchMember;
 import tv.weplay.ws.lobby.model.entity.MatchMemberEntity;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor

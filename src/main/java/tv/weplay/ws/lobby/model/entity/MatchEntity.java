@@ -1,10 +1,10 @@
 package tv.weplay.ws.lobby.model.entity;
 
-import lombok.*;
-import tv.weplay.ws.lobby.model.dto.*;
-
 import java.time.LocalDateTime;
 import java.util.List;
+import lombok.*;
+import tv.weplay.ws.lobby.model.dto.Node;
+import tv.weplay.ws.lobby.model.dto.TournamentMember;
 
 @Data
 @Builder(toBuilder = true)

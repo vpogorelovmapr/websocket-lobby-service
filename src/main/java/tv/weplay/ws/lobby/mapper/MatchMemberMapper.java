@@ -1,9 +1,8 @@
 package tv.weplay.ws.lobby.mapper;
 
+import java.util.List;
 import tv.weplay.ws.lobby.model.dto.MatchMember;
 import tv.weplay.ws.lobby.model.entity.MatchMemberEntity;
-
-import java.util.List;
 
 public interface MatchMemberMapper {
 

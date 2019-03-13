@@ -13,7 +13,8 @@ public class JsonApiConverterConfiguration {
 
     @Bean
     public JsonApiConverter jsonApiConverter(ObjectMapper mapper) {
-        JsonApiConverter converter = new JsonApiConverter(mapper, Lobby.class, LobbyMap.class, TournamentMember.class);
+        JsonApiConverter converter = new JsonApiConverter(mapper, Lobby.class, LobbyMap.class,
+                TournamentMember.class);
         converter.enableSerializationOption(SerializationFeature.INCLUDE_RELATIONSHIP_ATTRIBUTES);
         converter.enableDeserializationOption(DeserializationFeature.ALLOW_UNKNOWN_INCLUSIONS);
         return converter;

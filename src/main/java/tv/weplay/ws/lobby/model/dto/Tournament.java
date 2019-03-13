@@ -11,6 +11,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Tournament {
+
     @Id(LongIdHandler.class)
     private Long id;
 }

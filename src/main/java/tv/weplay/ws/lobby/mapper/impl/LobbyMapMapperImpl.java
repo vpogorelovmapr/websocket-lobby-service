@@ -1,15 +1,15 @@
 package tv.weplay.ws.lobby.mapper.impl;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 import tv.weplay.ws.lobby.mapper.LobbyMapMapper;
 import tv.weplay.ws.lobby.model.dto.LobbyMap;
 import tv.weplay.ws.lobby.model.entity.LobbyMapEntity;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 @Component
 public class LobbyMapMapperImpl implements LobbyMapMapper {
+
     @Override
     public LobbyMap toDTO(LobbyMapEntity entity) {
         if (entity == null) {

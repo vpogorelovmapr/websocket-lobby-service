@@ -1,10 +1,9 @@
 package tv.weplay.ws.lobby.service.impl;
 
+import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
-import static tv.weplay.ws.lobby.model.dto.TournamentMemberRole.CAPTAIN;
-import static tv.weplay.ws.lobby.model.dto.TournamentMemberRole.CORE;
-import static tv.weplay.ws.lobby.model.dto.TournamentMemberRole.STAND_IN;
+import static tv.weplay.ws.lobby.model.dto.TournamentMemberRole.*;
 import static tv.weplay.ws.lobby.service.impl.RabbitMQEventSenderService.DEFAULT_EXCHANGE;
 import static tv.weplay.ws.lobby.service.impl.SchedulerServiceImpl.*;
 
@@ -94,20 +93,23 @@ public class LobbyServiceImpl implements LobbyService {
     public void startVoting(Long lobbyId) {
         log.info("Start voting. Lobby id: {} ", lobbyId);
         Lobby lobby = findById(lobbyId);
-        LobbyStatus status = allMatchMemberPresent(lobby) ? LobbyStatus.ONGOING : LobbyStatus.CANCELED;
+        LobbyStatus status =
+                allMatchMemberPresent(lobby) ? LobbyStatus.ONGOING : LobbyStatus.CANCELED;
         String type = status.equals(LobbyStatus.ONGOING) ? EventTypes.MATCH_STARTED_EVENT :
                 EventTypes.MATCH_CANCELED_EVENT;
         lobby.setStatus(status);
         update(lobby);
 
-        Lobby event = status.equals(LobbyStatus.ONGOING) ? buildMatchStartEvent(lobby) : buildChangeLobbyStatusEvent(lobby);
+        Lobby event = status.equals(LobbyStatus.ONGOING) ? buildMatchStartEvent(lobby)
+                : buildChangeLobbyStatusEvent(lobby);
         publishEventToRabbitMQ(event, lobby.getId().toString(), type);
 
         if (status.equals(LobbyStatus.ONGOING)) {
             if (isVotingCompleted(lobby)) {
                 lobby.setStatus(LobbyStatus.ENDED);
                 Lobby endEvent = buildChangeLobbyStatusEvent(lobby);
-                publishEventToRabbitMQ(endEvent, lobby.getId().toString(), EventTypes.MATCH_ENDED_EVENT);
+                publishEventToRabbitMQ(endEvent, lobby.getId().toString(),
+                        EventTypes.MATCH_ENDED_EVENT);
             } else {
                 scheduleVoteJob(lobbyId, lobby.getSettings().getVoteTime());
             }
@@ -157,7 +159,9 @@ public class LobbyServiceImpl implements LobbyService {
         Optional<LobbyMap> nextLobbyMap = getNextLobbyMap(lobby);
         nextLobbyMap.ifPresent(map -> {
             //TODO: Send error message to rabbitmq
-            if (!isValidVoteRequest(lobbyMap, lobby, map, userId)) return;
+            if (!isValidVoteRequest(lobbyMap, lobby, map, userId)) {
+                return;
+            }
             map.setVoteItem(lobbyMap.getVoteItem());
             map.setStatus(LobbyMapStatus.USER_PICK);
             Lobby updated = update(lobby);
@@ -214,7 +218,8 @@ public class LobbyServiceImpl implements LobbyService {
     private void publishEventToRabbitMQ(Object event, String routingKey, String type) {
         byte[] data = converter.writeObject(event);
         log.info("Publishing event to rabbitMQ [{}]", new String(data));
-        rabbitMQService.prepareAndSendEvent(rabbitmqProperties.getOutcomingUiQueueName(), data, routingKey, type);
+        rabbitMQService.prepareAndSendEvent(rabbitmqProperties.getOutcomingUiQueueName(), data,
+                routingKey, type);
         rabbitMQService.prepareAndSendEvent(DEFAULT_EXCHANGE, data,
                 rabbitmqProperties.getOutcomingTournamentsQueueName(), type);
     }
@@ -278,7 +283,8 @@ public class LobbyServiceImpl implements LobbyService {
     private void scheduleVoteJob(Long lobbyId, Integer interval) {
         JobDataMap dataMap = new JobDataMap();
         dataMap.put(LOBBY_ID, lobbyId);
-        schedulerService.schedule(VOTE_PREFIX + lobbyId, VOTE_GROUP, ZonedDateTime.now().plusSeconds(interval), dataMap,
+        schedulerService.schedule(VOTE_PREFIX + lobbyId, VOTE_GROUP,
+                ZonedDateTime.now().plusSeconds(interval), dataMap,
                 interval, VoteJob.class);
     }
 
@@ -307,7 +313,7 @@ public class LobbyServiceImpl implements LobbyService {
 
     private Optional<LobbyMap> getNextLobbyMap(Lobby lobby) {
         return lobby.getLobbyMap().stream()
-                .filter(map -> Objects.isNull(map.getVoteItem()))
+                .filter(map -> isNull(map.getVoteItem()))
                 .findFirst();
     }
 
@@ -321,11 +327,12 @@ public class LobbyServiceImpl implements LobbyService {
 
         return expectedCoreMemberCount.entrySet().stream()
                 .allMatch(entry -> {
-                    if (actualCoreMemberCount.get(entry.getKey()) == null) {
+                    if (isNull(actualCoreMemberCount.get(entry.getKey()))) {
                         log.info("Team: [{}]. Core members are not present", entry.getKey());
                         return false;
                     }
-                    log.info("Team: [{}]. Expected core number: {}. Actual: {}", entry.getKey(), entry.getValue(), actualCoreMemberCount.get(entry.getKey()));
+                    log.info("Team: [{}]. Expected core number: {}. Actual: {}", entry.getKey(),
+                            entry.getValue(), actualCoreMemberCount.get(entry.getKey()));
                     return entry.getValue() <= actualCoreMemberCount.get(entry.getKey());
                 });
     }

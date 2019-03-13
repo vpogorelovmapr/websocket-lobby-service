@@ -1,8 +1,7 @@
 package tv.weplay.ws.lobby.service;
 
-import tv.weplay.ws.lobby.model.dto.*;
-
 import java.util.List;
+import tv.weplay.ws.lobby.model.dto.*;
 
 public interface LobbyService {
 

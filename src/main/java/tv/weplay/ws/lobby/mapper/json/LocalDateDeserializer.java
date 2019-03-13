@@ -1,14 +1,13 @@
 package tv.weplay.ws.lobby.mapper.json;
 
+import static java.time.format.DateTimeFormatter.ofPattern;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-
-import static java.time.format.DateTimeFormatter.ofPattern;
 
 public class LocalDateDeserializer extends JsonDeserializer<LocalDateTime> {
 
