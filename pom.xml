@@ -23,7 +23,6 @@
         <security.lib>1.0.13</security.lib>
         <guava.version>27.0.1-jre</guava.version>
         <testcontainers.version>1.10.6</testcontainers.version>
-        <random-beans.version>3.7.0</random-beans.version>
         <guava.version>27.0.1-jre</guava.version>
         <jsonapi-converter.version>0.9</jsonapi-converter.version>
         <mockito.version>2.0.2-beta</mockito.version>
@@ -111,12 +110,6 @@
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
             <version>${testcontainers.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.github.benas</groupId>
-            <artifactId>random-beans</artifactId>
-            <version>${random-beans.version}</version>
         </dependency>
 
         <dependency>
