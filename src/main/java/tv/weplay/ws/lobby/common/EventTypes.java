@@ -9,4 +9,5 @@ public class EventTypes {
     public static final String MEMBER_EVENT = "MemberEvent";
     public static final String VOTE_EVENT = "VoteEvent";
     public static final String LOBBY_CREATED = "create lobby";
+    public static final String ERROR = "Error";
 }
