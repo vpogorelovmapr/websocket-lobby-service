@@ -104,12 +104,20 @@ public class LobbyServiceImpl implements LobbyService {
                 : buildChangeLobbyStatusEvent(lobby);
         publishEventToRabbitMQ(event, lobby.getId().toString(), type);
 
+        if (type.equals(EventTypes.MATCH_CANCELED_EVENT)) {
+            log.info("Lobby[{}] state before deletion: {}", lobby.getId(), lobby);
+            delete(lobbyId);
+            return;
+        }
+
         if (status.equals(LobbyStatus.ONGOING)) {
             if (isVotingCompleted(lobby)) {
                 lobby.setStatus(LobbyStatus.ENDED);
                 Lobby endEvent = buildChangeLobbyStatusEvent(lobby);
                 publishEventToRabbitMQ(endEvent, lobby.getId().toString(),
                         EventTypes.MATCH_ENDED_EVENT);
+                log.info("Lobby[{}] state before deletion: {}", lobby.getId(), lobby);
+                delete(lobbyId);
             } else {
                 scheduleVoteJob(lobbyId, lobby.getSettings().getVoteTime());
             }
@@ -201,6 +209,8 @@ public class LobbyServiceImpl implements LobbyService {
             schedulerService.unschedule(VOTE_PREFIX + lobby.getId(), VOTE_GROUP);
             Lobby event = buildChangeLobbyStatusEvent(lobby);
             publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.MATCH_ENDED_EVENT);
+            log.info("Lobby[{}] state before deletion: {}", lobby.getId(), lobby);
+            delete(lobby.getId());
         }
     }
 
