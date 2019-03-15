@@ -97,8 +97,8 @@ public class LobbyServiceImpl implements LobbyService {
         Lobby lobby = findById(lobbyId);
         LobbyStatus status =
                 allMatchMemberPresent(lobby) ? LobbyStatus.ONGOING : LobbyStatus.CANCELED;
-        String type = status.equals(LobbyStatus.ONGOING) ? EventTypes.MATCH_STARTED_EVENT :
-                EventTypes.MATCH_CANCELED_EVENT;
+        String type = status.equals(LobbyStatus.ONGOING) ? EventTypes.MATCH_STARTED :
+                EventTypes.MATCH_CANCELED;
         lobby.setStatus(status);
         update(lobby);
 
@@ -106,7 +106,7 @@ public class LobbyServiceImpl implements LobbyService {
                 : buildChangeLobbyStatusEvent(lobby);
         publishEventToRabbitMQ(event, lobby.getId().toString(), type);
 
-        if (type.equals(EventTypes.MATCH_CANCELED_EVENT)) {
+        if (type.equals(EventTypes.MATCH_CANCELED)) {
             sendErrorNotification(lobby, ErrorType.LOBBY_CANCELED, Optional.of(getUsersInformation(lobby)));
             log.info("Lobby[{}] state before deletion: {}", lobby.getId(), lobby);
             delete(lobbyId);
@@ -118,7 +118,7 @@ public class LobbyServiceImpl implements LobbyService {
                 lobby.setStatus(LobbyStatus.ENDED);
                 Lobby endEvent = buildChangeLobbyStatusEvent(lobby);
                 publishEventToRabbitMQ(endEvent, lobby.getId().toString(),
-                        EventTypes.MATCH_ENDED_EVENT);
+                        EventTypes.MATCH_ENDED);
                 log.info("Lobby[{}] state before deletion: {}", lobby.getId(), lobby);
                 delete(lobbyId);
             } else {
@@ -139,7 +139,7 @@ public class LobbyServiceImpl implements LobbyService {
             member.setStatus(MemberStatus.ONLINE);
             update(lobby);
             MatchMember event = buildMatchMemberEvent(member, lobbyId);
-            publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.MEMBER_EVENT);
+            publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.MEMBER);
         });
     }
 
@@ -159,7 +159,7 @@ public class LobbyServiceImpl implements LobbyService {
             map.setStatus(status);
             update(lobby);
             LobbyMap event = buildLobbyMapEvent(map, lobbyId);
-            publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.VOTE_EVENT);
+            publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.VOTE);
             voteRandomCardIfLastVote(lobby);
         });
     }
@@ -180,7 +180,7 @@ public class LobbyServiceImpl implements LobbyService {
             }
 
             LobbyMap event = buildLobbyMapEvent(map, lobbyId);
-            publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.VOTE_EVENT);
+            publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.VOTE);
 
             voteRandomCardIfLastVote(lobby);
         });
@@ -210,7 +210,7 @@ public class LobbyServiceImpl implements LobbyService {
             voteRandomCard(lobby.getId(), LobbyMapStatus.SERVER_PICK);
             schedulerService.unschedule(VOTE_PREFIX + lobby.getId(), VOTE_GROUP);
             Lobby event = buildChangeLobbyStatusEvent(lobby);
-            publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.MATCH_ENDED_EVENT);
+            publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.MATCH_ENDED);
             log.info("Lobby[{}] state before deletion: {}", lobby.getId(), lobby);
             delete(lobby.getId());
         }
@@ -222,10 +222,10 @@ public class LobbyServiceImpl implements LobbyService {
         log.info("Publishing event to rabbitMQ [{}]", new String(data));
         eventSenderService
                 .prepareAndSendEvent(rabbitmqProperties.getOutcomingPrivateQueueName(), data,
-                routingKey, EventTypes.MATCH_CREATED_EVENT);
+                routingKey, EventTypes.MATCH_CREATED);
         eventSenderService.prepareAndSendEvent(DEFAULT_EXCHANGE, data,
                 rabbitmqProperties.getOutcomingTournamentsQueueName(),
-                EventTypes.MATCH_CREATED_EVENT);
+                EventTypes.MATCH_CREATED);
     }
 
     @SneakyThrows

@@ -141,6 +141,10 @@ public class JsonApiConverter {
         return readDocument(new ByteArrayInputStream(data.getBytes()), clazz);
     }
 
+    public <T> T readObject(String data, Class<T> clazz) {
+        return readDocument(new ByteArrayInputStream(data.getBytes()), clazz).get();
+    }
+
     /**
      * Reads JSON API spec document and converts it into target type.
      *

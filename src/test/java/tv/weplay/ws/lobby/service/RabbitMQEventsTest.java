@@ -14,8 +14,8 @@ import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static tv.weplay.ws.lobby.common.EventTypes.LOBBY_CREATED;
-import static tv.weplay.ws.lobby.common.EventTypes.MEMBER_EVENT;
-import static tv.weplay.ws.lobby.common.EventTypes.VOTE_EVENT;
+import static tv.weplay.ws.lobby.common.EventTypes.MEMBER;
+import static tv.weplay.ws.lobby.common.EventTypes.VOTE;
 import static tv.weplay.ws.lobby.model.dto.LobbyStatus.CANCELED;
 import static tv.weplay.ws.lobby.model.dto.LobbyStatus.UPCOMING;
 
@@ -27,7 +27,6 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
 
     @Autowired
     private EventSenderService eventSenderService;
-
     @Autowired
     private JsonApiConverter converter;
 
@@ -79,7 +78,7 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
 
     private void receiveAndCheckLobbyMapEvent(String queue, Long mapId, Long voteId) {
         String response = eventSenderService.receiveAndConvert(queue, DEFAULT_TIMEOUT);
-        LobbyMap lobbyMapEvent = converter.readDocument(response, LobbyMap.class).get();
+        LobbyMap lobbyMapEvent = converter.readObject(response, LobbyMap.class);
 
         assertThat(lobbyMapEvent).isNotNull();
         assertThat(lobbyMapEvent.getId()).isEqualTo(mapId);
@@ -94,7 +93,8 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
                 .build();
 
         String message = new String(converter.writeDocument(new JSONAPIDocument<>(map)));
-        eventSenderService.prepareAndSendEvent("", message, rabbitmqProperties.getIncomingUiQueueName(), VOTE_EVENT, getDefaultHeaders(DEFAULT_ID));
+        eventSenderService.prepareAndSendEvent("", message, rabbitmqProperties.getIncomingUiQueueName(),
+                VOTE, getDefaultHeaders(DEFAULT_ID));
     }
 
     private void receiveAndCheckLobbyEvent(LobbyStatus status) {
@@ -109,7 +109,8 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
                 .build();
 
         String message = new String(converter.writeDocument(new JSONAPIDocument<>(member)));
-        eventSenderService.prepareAndSendEvent("", message, rabbitmqProperties.getIncomingUiQueueName(), MEMBER_EVENT, getDefaultHeaders(memberId));
+        eventSenderService.prepareAndSendEvent("", message, rabbitmqProperties.getIncomingUiQueueName(),
+                MEMBER, getDefaultHeaders(memberId));
 
         checkMatchMemberEvent(rabbitmqProperties.getOutcomingUiQueueName(), memberId);
         checkMatchMemberEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), memberId);
@@ -117,7 +118,7 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
 
     private void checkMatchMemberEvent(String queue, Long memberId) {
         String response = eventSenderService.receiveAndConvert(queue, DEFAULT_TIMEOUT);
-        MatchMember memberEvent = converter.readDocument(response, MatchMember.class).get();
+        MatchMember memberEvent = converter.readObject(response, MatchMember.class);
 
         assertThat(memberEvent).isNotNull();
         assertThat(memberEvent.getId()).isEqualTo(memberId);
@@ -125,7 +126,7 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
 
     private void checkLobbyStatusEvent(String queueName, LobbyStatus status) {
         String response = eventSenderService.receiveAndConvert(queueName, DEFAULT_TIMEOUT);
-        Lobby lobbyCanceledEvent = converter.readDocument(response, Lobby.class).get();
+        Lobby lobbyCanceledEvent = converter.readObject(response, Lobby.class);
 
         assertThat(lobbyCanceledEvent).isNotNull();
         assertThat(lobbyCanceledEvent.getStatus()).isEqualTo(status);

@@ -36,20 +36,18 @@ public class EventListener {
 
     private void handleLobbyCreatedEvent(Event event) {
         if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CREATED)) {
-            Lobby lobby = converter.readDocument(event.getEventData().toString(), Lobby.class)
-                    .get();
+            Lobby lobby = converter.readObject(event.getEventData().toString(), Lobby.class);
             lobbyService.create(lobby);
         }
     }
 
     private void handleUIEvent(@Header("user_id") Long userId, Event event) {
-        if (event.getEventMetaData().getType().equals(EventTypes.MEMBER_EVENT)) {
+        if (event.getEventMetaData().getType().equals(EventTypes.MEMBER)) {
             MatchMember member = converter
-                    .readDocument(event.getEventData().toString(), MatchMember.class).get();
+                    .readObject(event.getEventData().toString(), MatchMember.class);
             lobbyService.updateMemberStatus(member.getLobby().getId(), member.getId());
-        } else if (event.getEventMetaData().getType().equals(EventTypes.VOTE_EVENT)) {
-            LobbyMap map = converter.readDocument(event.getEventData().toString(), LobbyMap.class)
-                    .get();
+        } else if (event.getEventMetaData().getType().equals(EventTypes.VOTE)) {
+            LobbyMap map = converter.readObject(event.getEventData().toString(), LobbyMap.class);
             lobbyService.voteCardByUser(map.getLobby().getId(), map, userId);
         }
     }
