@@ -13,7 +13,7 @@ import tv.weplay.ws.lobby.model.dto.*;
 import java.util.*;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static tv.weplay.ws.lobby.common.EventTypes.LOBBY_CREATED;
+import static tv.weplay.ws.lobby.common.EventTypes.LOBBY_CREATE_REQUEST;
 import static tv.weplay.ws.lobby.common.EventTypes.MEMBER;
 import static tv.weplay.ws.lobby.common.EventTypes.VOTE;
 import static tv.weplay.ws.lobby.model.dto.LobbyStatus.CANCELED;
@@ -139,7 +139,8 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
     private void sendLobbyCreationEvent() throws DocumentSerializationException {
         Lobby lobby = getLobby();
         String message = new String(converter.writeDocument(new JSONAPIDocument<>(lobby)));
-        eventSenderService.prepareAndSendEvent("", message, rabbitmqProperties.getIncomingTournamentsQueueName(), LOBBY_CREATED, new HashMap<>());
+        eventSenderService.prepareAndSendEvent("", message, rabbitmqProperties.getIncomingTournamentsQueueName(),
+                LOBBY_CREATE_REQUEST, new HashMap<>());
     }
 
     private Lobby getLobby() {

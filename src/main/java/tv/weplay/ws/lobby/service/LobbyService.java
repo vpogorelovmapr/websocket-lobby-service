@@ -17,6 +17,10 @@ public interface LobbyService {
 
     List<Lobby> findAll();
 
+    void startOrCancelLobby(Long lobbyId);
+
+    void cancelVoting(Long lobbyId);
+
     void startVoting(Long lobbyId);
 
     void updateMemberStatus(Long lobbyId, Long memberId);
