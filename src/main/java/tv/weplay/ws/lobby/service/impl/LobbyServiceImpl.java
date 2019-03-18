@@ -107,7 +107,7 @@ public class LobbyServiceImpl implements LobbyService {
         publishEventToRabbitMQ(event, lobby.getId().toString(), type);
 
         if (type.equals(EventTypes.MATCH_CANCELED)) {
-            sendErrorNotification(lobby, ErrorType.LOBBY_CANCELED, Optional.of(getUsersInformation(lobby)));
+            sendErrorNotification(lobby.getId(), ErrorType.LOBBY_CANCELED, Optional.of(getUsersInformation(lobby)));
             log.info("Lobby[{}] state before deletion: {}", lobby.getId(), lobby);
             delete(lobbyId);
             return;
@@ -132,6 +132,10 @@ public class LobbyServiceImpl implements LobbyService {
         log.info("Updating member with id {} for lobby {}", memberId, lobbyId);
         Lobby lobby = findById(lobbyId);
         log.info("Lobby found: {}", lobby);
+        if (isNull(lobby)) {
+            sendErrorNotification(lobbyId, ErrorType.LOBBY_NOT_EXIST, Optional.empty());
+            return;
+        }
         Optional<MatchMember> matchMember = lobby.getMatch().getMembers().stream()
                 .filter(member -> member.getId().equals(memberId))
                 .findAny();
@@ -375,20 +379,20 @@ public class LobbyServiceImpl implements LobbyService {
     private boolean isValidVoteRequest(LobbyMap lobbyMap, Lobby lobby, LobbyMap map, Long userId) {
         if (!lobbyMap.getId().equals(map.getId())) {
             log.info("Invalid lobby map id {}", lobbyMap.getId());
-            sendErrorNotification(lobby, ErrorType.INVALID_LOBBY_MAP_ID, Optional.empty());
+            sendErrorNotification(lobby.getId(), ErrorType.INVALID_LOBBY_MAP_ID, Optional.empty());
             return false;
         }
         Member member = map.getMember();
         if (member == null || !member.getId().equals(userId)) {
             log.info("Invalid user id {}", userId);
-            sendErrorNotification(lobby, ErrorType.INVALID_USER_ID, Optional.empty());
+            sendErrorNotification(lobby.getId(), ErrorType.INVALID_USER_ID, Optional.empty());
             return false;
 
         }
         List<Long> freeCardIds = getFreeCardIds(lobby);
         if (!freeCardIds.contains(lobbyMap.getVoteItem().getId())) {
             log.info("Invalid card id {}", lobbyMap.getVoteItem().getId());
-            sendErrorNotification(lobby, ErrorType.INVALID_CARD_ID, Optional.empty());
+            sendErrorNotification(lobby.getId(), ErrorType.INVALID_CARD_ID, Optional.empty());
             return false;
         }
         return true;
@@ -402,10 +406,10 @@ public class LobbyServiceImpl implements LobbyService {
                 .collect(Collectors.joining(";"));
     }
 
-    private void sendErrorNotification(Lobby lobby, ErrorType errorType,
+    private void sendErrorNotification(Long lobbyId, ErrorType errorType,
             Optional<String> optionalInfo) {
         errorHandlerService.sendErrorMessage(rabbitmqProperties.getOutcomingUiQueueName(),
-                lobby.getId().toString(), errorType, optionalInfo);
+                lobbyId.toString(), errorType, optionalInfo);
     }
 
 }
