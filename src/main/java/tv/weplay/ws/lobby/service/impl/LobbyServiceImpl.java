@@ -1,10 +1,9 @@
 package tv.weplay.ws.lobby.service.impl;
 
+import static java.util.Objects.isNull;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.groupingBy;
-import static tv.weplay.ws.lobby.model.dto.TournamentMemberRole.CAPTAIN;
-import static tv.weplay.ws.lobby.model.dto.TournamentMemberRole.CORE;
-import static tv.weplay.ws.lobby.model.dto.TournamentMemberRole.STAND_IN;
+import static tv.weplay.ws.lobby.model.dto.TournamentMemberRole.*;
 import static tv.weplay.ws.lobby.service.impl.RabbitMQEventSenderService.DEFAULT_EXCHANGE;
 import static tv.weplay.ws.lobby.service.impl.SchedulerServiceImpl.*;
 
@@ -23,6 +22,7 @@ import tv.weplay.ws.lobby.converter.JsonApiConverter;
 import tv.weplay.ws.lobby.mapper.LobbyMapper;
 import tv.weplay.ws.lobby.model.dto.*;
 import tv.weplay.ws.lobby.model.entity.LobbyEntity;
+import tv.weplay.ws.lobby.model.error.ErrorType;
 import tv.weplay.ws.lobby.repository.LobbyRepository;
 import tv.weplay.ws.lobby.scheduled.MatchStartJob;
 import tv.weplay.ws.lobby.scheduled.VoteJob;
@@ -37,10 +37,11 @@ public class LobbyServiceImpl implements LobbyService {
 
     private final LobbyMapper lobbyMapper;
     private final LobbyRepository lobbyRepository;
-    private final EventSenderService rabbitMQService;
-    private final RabbitmqProperties rabbitmqProperties;
+    private final EventSenderService eventSenderService;
+    private final RabbitmqProperties rmqProperties;
     private final JsonApiConverter converter;
     private final SchedulerService schedulerService;
+    private final ErrorHandlerService errorHandlerService;
 
     @Override
     public Lobby create(Lobby lobby) {
@@ -52,9 +53,9 @@ public class LobbyServiceImpl implements LobbyService {
 
         Lobby event = buildLobbyCreatedEvent(created);
         String routingKey = buildInvitesRoutingKey(lobby);
-        publishInvitesToRabbitMQ(event, routingKey, EventTypes.MATCH_CREATED_EVENT);
+        publishInvitesToRMQ(event, routingKey);
 
-        scheduleStartMatchJob(created);
+        scheduleLobbyStartJob(created);
 
         return created;
     }
@@ -62,8 +63,8 @@ public class LobbyServiceImpl implements LobbyService {
     @Override
     public Lobby update(Lobby lobby) {
         LobbyEntity entity = lobbyMapper.toEntity(lobby);
-        LobbyEntity createdEntity = lobbyRepository.save(entity);
-        Lobby updated = lobbyMapper.toDTO(createdEntity);
+        LobbyEntity updatedEntity = lobbyRepository.save(entity);
+        Lobby updated = lobbyMapper.toDTO(updatedEntity);
         log.info("Updated lobby {}", updated);
         return updated;
     }
@@ -91,27 +92,51 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     @Override
+    public void startOrCancelLobby(Long lobbyId) {
+        if (allMatchMemberPresent(lobbyId)) {
+            startVoting(lobbyId);
+        } else {
+            cancelVoting(lobbyId);
+        }
+    }
+
+    @Override
     public void startVoting(Long lobbyId) {
         log.info("Start voting. Lobby id: {} ", lobbyId);
         Lobby lobby = findById(lobbyId);
-        LobbyStatus status = allMatchMemberPresent(lobby) ? LobbyStatus.ONGOING : LobbyStatus.CANCELED;
-        String type = status.equals(LobbyStatus.ONGOING) ? EventTypes.MATCH_STARTED_EVENT :
-                EventTypes.MATCH_CANCELED_EVENT;
-        lobby.setStatus(status);
+        lobby.setStatus(LobbyStatus.ONGOING);
         update(lobby);
 
-        Lobby event = status.equals(LobbyStatus.ONGOING) ? buildMatchStartEvent(lobby) : buildChangeLobbyStatusEvent(lobby);
-        publishEventToRabbitMQ(event, lobby.getId().toString(), type);
+        Lobby event = buildMatchStartEvent(lobby);
+        publishEventToRMQ(event, lobby.getId().toString(), EventTypes.LOBBY_STARTED);
 
-        if (status.equals(LobbyStatus.ONGOING)) {
-            if (isVotingCompleted(lobby)) {
-                lobby.setStatus(LobbyStatus.ENDED);
-                Lobby endEvent = buildChangeLobbyStatusEvent(lobby);
-                publishEventToRabbitMQ(endEvent, lobby.getId().toString(), EventTypes.MATCH_ENDED_EVENT);
-            } else {
-                scheduleVoteJob(lobbyId, lobby.getSettings().getVoteTime());
-            }
+        if (isVotingCompleted(lobby)) {
+            lobby.setStatus(LobbyStatus.ENDED);
+            Lobby endEvent = buildChangeLobbyStatusEvent(lobby);
+            publishEventToRMQ(endEvent, lobby.getId().toString(), EventTypes.LOBBY_ENDED);
+
+            log.info("Lobby[{}] state before deletion: {}", lobby.getId(), lobby);
+            delete(lobbyId);
+        } else {
+            scheduleVoteJob(lobbyId, lobby.getSettings().getVoteTime());
         }
+    }
+
+    @Override
+    public void cancelVoting(Long lobbyId) {
+        log.info("Switching to cancel lobby sate. Lobby id: {} ", lobbyId);
+        Lobby lobby = findById(lobbyId);
+        lobby.setStatus(LobbyStatus.CANCELED);
+        update(lobby);
+
+        Lobby event = buildChangeLobbyStatusEvent(lobby);
+        publishEventToRMQ(event, lobby.getId().toString(), EventTypes.LOBBY_CANCELED);
+
+        String userInformation = getUsersInformation(lobby);
+        log.info("Lobby[{}] state was canceled. USer information: {}", userInformation);
+        sendErrorNotification(lobby.getId(), ErrorType.LOBBY_CANCELED, Optional.of(userInformation));
+        log.info("Lobby[{}] state before deletion: {}", lobby.getId(), lobby);
+        delete(lobbyId);
     }
 
     @Override
@@ -119,6 +144,10 @@ public class LobbyServiceImpl implements LobbyService {
         log.info("Updating member with id {} for lobby {}", memberId, lobbyId);
         Lobby lobby = findById(lobbyId);
         log.info("Lobby found: {}", lobby);
+        if (isNull(lobby)) {
+            sendErrorNotification(lobbyId, ErrorType.LOBBY_NOT_EXIST, Optional.empty());
+            return;
+        }
         Optional<MatchMember> matchMember = lobby.getMatch().getMembers().stream()
                 .filter(member -> member.getId().equals(memberId))
                 .findAny();
@@ -126,7 +155,7 @@ public class LobbyServiceImpl implements LobbyService {
             member.setStatus(MemberStatus.ONLINE);
             update(lobby);
             MatchMember event = buildMatchMemberEvent(member, lobbyId);
-            publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.MEMBER_EVENT);
+            publishEventToRMQ(event, lobby.getId().toString(), EventTypes.MEMBER);
         });
     }
 
@@ -145,8 +174,9 @@ public class LobbyServiceImpl implements LobbyService {
             map.setVoteItem(new VoteItem(cardId));
             map.setStatus(status);
             update(lobby);
+
             LobbyMap event = buildLobbyMapEvent(map, lobbyId);
-            publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.VOTE_EVENT);
+            publishEventToRMQ(event, lobby.getId().toString(), EventTypes.VOTE);
             voteRandomCardIfLastVote(lobby);
         });
     }
@@ -156,8 +186,9 @@ public class LobbyServiceImpl implements LobbyService {
         Lobby lobby = findById(lobbyId);
         Optional<LobbyMap> nextLobbyMap = getNextLobbyMap(lobby);
         nextLobbyMap.ifPresent(map -> {
-            //TODO: Send error message to rabbitmq
-            if (!isValidVoteRequest(lobbyMap, lobby, map, userId)) return;
+            if (!isValidVoteRequest(lobbyMap, lobby, map, userId)) {
+                return;
+            }
             map.setVoteItem(lobbyMap.getVoteItem());
             map.setStatus(LobbyMapStatus.USER_PICK);
             Lobby updated = update(lobby);
@@ -166,7 +197,7 @@ public class LobbyServiceImpl implements LobbyService {
             }
 
             LobbyMap event = buildLobbyMapEvent(map, lobbyId);
-            publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.VOTE_EVENT);
+            publishEventToRMQ(event, lobby.getId().toString(), EventTypes.VOTE);
 
             voteRandomCardIfLastVote(lobby);
         });
@@ -196,27 +227,32 @@ public class LobbyServiceImpl implements LobbyService {
             voteRandomCard(lobby.getId(), LobbyMapStatus.SERVER_PICK);
             schedulerService.unschedule(VOTE_PREFIX + lobby.getId(), VOTE_GROUP);
             Lobby event = buildChangeLobbyStatusEvent(lobby);
-            publishEventToRabbitMQ(event, lobby.getId().toString(), EventTypes.MATCH_ENDED_EVENT);
+            publishEventToRMQ(event, lobby.getId().toString(), EventTypes.LOBBY_ENDED);
+            log.info("Lobby[{}] state before deletion: {}", lobby.getId(), lobby);
+            delete(lobby.getId());
         }
     }
 
     @SneakyThrows
-    private void publishInvitesToRabbitMQ(Object event, String routingKey, String type) {
+    private void publishInvitesToRMQ(Object event, String routingKey) {
         byte[] data = converter.writeObject(event);
         log.info("Publishing event to rabbitMQ [{}]", new String(data));
-        rabbitMQService.prepareAndSendEvent(rabbitmqProperties.getOutcomingPrivateQueueName(), data,
-                routingKey, type);
-        rabbitMQService.prepareAndSendEvent(DEFAULT_EXCHANGE, data,
-                rabbitmqProperties.getOutcomingTournamentsQueueName(), type);
+        eventSenderService
+                .prepareAndSendEvent(rmqProperties.getOutcomingPrivateQueueName(), data,
+                routingKey, EventTypes.LOBBY_CREATED);
+        eventSenderService.prepareAndSendEvent(DEFAULT_EXCHANGE, data,
+                rmqProperties.getOutcomingTournamentsQueueName(),
+                EventTypes.LOBBY_CREATED);
     }
 
     @SneakyThrows
-    private void publishEventToRabbitMQ(Object event, String routingKey, String type) {
+    private void publishEventToRMQ(Object event, String routingKey, String type) {
         byte[] data = converter.writeObject(event);
         log.info("Publishing event to rabbitMQ [{}]", new String(data));
-        rabbitMQService.prepareAndSendEvent(rabbitmqProperties.getOutcomingUiQueueName(), data, routingKey, type);
-        rabbitMQService.prepareAndSendEvent(DEFAULT_EXCHANGE, data,
-                rabbitmqProperties.getOutcomingTournamentsQueueName(), type);
+        eventSenderService.prepareAndSendEvent(rmqProperties.getOutcomingUiQueueName(), data,
+                routingKey, type);
+        eventSenderService.prepareAndSendEvent(DEFAULT_EXCHANGE, data,
+                rmqProperties.getOutcomingTournamentsQueueName(), type);
     }
 
     private String buildInvitesRoutingKey(Lobby lobby) {
@@ -268,7 +304,7 @@ public class LobbyServiceImpl implements LobbyService {
                 .build();
     }
 
-    private void scheduleStartMatchJob(Lobby lobby) {
+    private void scheduleLobbyStartJob(Lobby lobby) {
         JobDataMap dataMap = new JobDataMap();
         dataMap.put(LOBBY_ID, lobby.getId());
         schedulerService.schedule(UUID.randomUUID().toString(), MATCH_START_GROUP,
@@ -278,14 +314,13 @@ public class LobbyServiceImpl implements LobbyService {
     private void scheduleVoteJob(Long lobbyId, Integer interval) {
         JobDataMap dataMap = new JobDataMap();
         dataMap.put(LOBBY_ID, lobbyId);
-        schedulerService.schedule(VOTE_PREFIX + lobbyId, VOTE_GROUP, ZonedDateTime.now().plusSeconds(interval), dataMap,
+        schedulerService.schedule(VOTE_PREFIX + lobbyId, VOTE_GROUP,
+                ZonedDateTime.now().plusSeconds(interval), dataMap,
                 interval, VoteJob.class);
     }
 
     private Long getRandomCardId(Lobby lobby) {
-        List<Long> pickedCardIds = getPickedCardIds(lobby);
-        List<Long> votePool = new ArrayList<>(lobby.getSettings().getVotePool());
-        votePool.removeAll(pickedCardIds);
+        List<Long> votePool = getFreeCardIds(lobby);
         int index = (int) (Math.random() % (votePool.size() - 1));
         return votePool.get(index);
     }
@@ -307,11 +342,12 @@ public class LobbyServiceImpl implements LobbyService {
 
     private Optional<LobbyMap> getNextLobbyMap(Lobby lobby) {
         return lobby.getLobbyMap().stream()
-                .filter(map -> Objects.isNull(map.getVoteItem()))
+                .filter(map -> isNull(map.getVoteItem()))
                 .findFirst();
     }
 
-    private boolean allMatchMemberPresent(Lobby lobby) {
+    private boolean allMatchMemberPresent(Long lobbyId) {
+        Lobby lobby = findById(lobbyId);
         if (!allCaptainsPresent(lobby)) {
             log.info("Captains are not online. Lobby: [{}]", lobby.getId());
             return false;
@@ -321,11 +357,12 @@ public class LobbyServiceImpl implements LobbyService {
 
         return expectedCoreMemberCount.entrySet().stream()
                 .allMatch(entry -> {
-                    if (actualCoreMemberCount.get(entry.getKey()) == null) {
+                    if (isNull(actualCoreMemberCount.get(entry.getKey()))) {
                         log.info("Team: [{}]. Core members are not present", entry.getKey());
                         return false;
                     }
-                    log.info("Team: [{}]. Expected core number: {}. Actual: {}", entry.getKey(), entry.getValue(), actualCoreMemberCount.get(entry.getKey()));
+                    log.info("Team: [{}]. Expected core number: {}. Actual: {}", entry.getKey(),
+                            entry.getValue(), actualCoreMemberCount.get(entry.getKey()));
                     return entry.getValue() <= actualCoreMemberCount.get(entry.getKey());
                 });
     }
@@ -352,23 +389,39 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     private boolean isValidVoteRequest(LobbyMap lobbyMap, Lobby lobby, LobbyMap map, Long userId) {
-        //We cannot throw exception here because ack message will not be sent to rabbitmq and message not read
         if (!lobbyMap.getId().equals(map.getId())) {
             log.info("Invalid lobby map id {}", lobbyMap.getId());
+            sendErrorNotification(lobby.getId(), ErrorType.INVALID_LOBBY_MAP_ID, Optional.empty());
             return false;
         }
         Member member = map.getMember();
         if (member == null || !member.getId().equals(userId)) {
             log.info("Invalid user id {}", userId);
+            sendErrorNotification(lobby.getId(), ErrorType.INVALID_USER_ID, Optional.empty());
             return false;
 
         }
         List<Long> freeCardIds = getFreeCardIds(lobby);
         if (!freeCardIds.contains(lobbyMap.getVoteItem().getId())) {
             log.info("Invalid card id {}", lobbyMap.getVoteItem().getId());
+            sendErrorNotification(lobby.getId(), ErrorType.INVALID_CARD_ID, Optional.empty());
             return false;
         }
         return true;
+    }
+
+    private String getUsersInformation(Lobby lobby) {
+        return lobby.getMatch().getMembers().stream()
+                .map(member -> String.format("MatchMember id=%s, UMS id=%s, Status=%s",
+                        member.getId(), member.getTournamentMember().getMember().getId(),
+                        member.getStatus()) )
+                .collect(Collectors.joining(";"));
+    }
+
+    private void sendErrorNotification(Long lobbyId, ErrorType errorType,
+            Optional<String> optionalInfo) {
+        errorHandlerService.sendErrorMessage(rmqProperties.getOutcomingUiQueueName(),
+                lobbyId.toString(), errorType, optionalInfo);
     }
 
 }

@@ -1,0 +1,27 @@
+{
+  "LOBBY_CANCELED": {
+    "id": 1,
+    "description": "Lobby was canceled. Additional info: %s"
+  },
+  "INVALID_LOBBY_MAP_ID": {
+    "id": 2,
+    "description": "Invalid lobby map id"
+  },
+  "INVALID_USER_ID": {
+    "id": 3,
+    "description": "Invalid user id. This user cannot vote now"
+  },
+  "INVALID_CARD_ID": {
+    "id": 4,
+    "description": "Invalid card id. This card id cannot be picked/dropped"
+  },
+  "LOBBY_NOT_EXIST": {
+    "id": 5,
+    "description": "Lobby doesn't exist. Probably it was canceled or ended"
+  },
+  "ACTION_AFTER_LOBBY_ENDED": {
+    "id": 6,
+    "description": "This action cannot be done. Lobby is already ended"
+  }
+
+}

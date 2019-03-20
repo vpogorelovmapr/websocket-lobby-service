@@ -10,7 +10,7 @@ spring:
         default-requeue-rejected: false
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://localhost:13306/lobby_test
+    url: jdbc:mysql://localhost:13306/lobby_test?&autoReconnect=true&failOverReadOnly=false&maxReconnects=10
     username: user
     password: pass
   jpa:
@@ -23,6 +23,10 @@ spring:
     job-store-type: jdbc
     properties:
       org.quartz.threadPool.threadCount: 10
+  sleuth:
+    enabled: false
+  zipkin:
+    enabled: false
 
 rabbitmq:
   dead-letter-exchange-name: lobby_dlx_dev

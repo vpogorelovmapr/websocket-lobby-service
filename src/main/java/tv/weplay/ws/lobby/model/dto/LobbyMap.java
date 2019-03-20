@@ -3,9 +3,8 @@ package tv.weplay.ws.lobby.model.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.jasminb.jsonapi.LongIdHandler;
 import com.github.jasminb.jsonapi.annotations.*;
-import lombok.*;
-
 import java.time.LocalDateTime;
+import lombok.*;
 
 @Data
 @ToString(exclude = "lobby")

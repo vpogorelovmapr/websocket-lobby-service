@@ -24,7 +24,7 @@ public class MatchStartJob extends QuartzJobBean {
         JobDataMap jobDataMap = jobExecutionContext.getMergedJobDataMap();
         Long lobbyId = jobDataMap.getLong(LOBBY_ID);
 
-        lobbyService.startVoting(lobbyId);
+        lobbyService.startOrCancelLobby(lobbyId);
     }
 
 }

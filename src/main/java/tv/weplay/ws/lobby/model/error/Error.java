@@ -1,17 +1,20 @@
-package tv.weplay.ws.lobby.model.dto;
+package tv.weplay.ws.lobby.model.error;
 
 import com.github.jasminb.jsonapi.LongIdHandler;
 import com.github.jasminb.jsonapi.annotations.Id;
 import com.github.jasminb.jsonapi.annotations.Type;
+import java.time.LocalDateTime;
 import lombok.*;
 
 @Data
-@Type("Tournament")
-@Builder(toBuilder = true)
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class Tournament {
+@Type("Error")
+public class Error {
 
     @Id(LongIdHandler.class)
     private Long id;
+    private String description;
+    private LocalDateTime dateTime;
 }

@@ -1,7 +1,7 @@
 package tv.weplay.ws.lobby.config;
 
-import java.util.Map;
 import com.google.common.collect.ImmutableMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.amqp.core.*;
 import org.springframework.context.annotation.*;
@@ -23,7 +23,8 @@ public class RabbitMQConfiguration {
 
     @Bean
     public Queue frontendQueue() {
-        return new Queue(rabbitmqProperties.getIncomingUiQueueName(), true, false, false, dlxArgs());
+        return new Queue(rabbitmqProperties.getIncomingUiQueueName(), true, false, false,
+                dlxArgs());
     }
 
     @Bean
@@ -38,6 +39,7 @@ public class RabbitMQConfiguration {
 
     @Bean
     public Binding deadLetterBinding(Queue deadLetterQueue, TopicExchange deadLetterExchange) {
-        return BindingBuilder.bind(deadLetterQueue).to(deadLetterExchange).with(rabbitmqProperties.getDeadLetterQueueName());
+        return BindingBuilder.bind(deadLetterQueue).to(deadLetterExchange)
+                .with(rabbitmqProperties.getDeadLetterQueueName());
     }
 }

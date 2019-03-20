@@ -4,11 +4,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import java.time.LocalDateTime;
 import org.springframework.context.annotation.*;
 import tv.weplay.ws.lobby.mapper.json.LocalDateDeserializer;
 import tv.weplay.ws.lobby.mapper.json.LocalDateSerializer;
-
-import java.time.LocalDateTime;
 
 @Configuration
 public class ObjectMapperConfiguration {

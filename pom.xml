@@ -5,12 +5,12 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>2.1.2.RELEASE</version>
+        <version>2.1.3.RELEASE</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>tv.weplay.ws.lobby</groupId>
     <artifactId>websocket-lobby-service</artifactId>
-    <version>0.0.12</version>
+    <version>0.0.13</version>
     <name>websocket-lobby-service</name>
     <description>Websocket lobby server</description>
 
@@ -23,10 +23,12 @@
         <security.lib>1.0.13</security.lib>
         <guava.version>27.0.1-jre</guava.version>
         <testcontainers.version>1.10.6</testcontainers.version>
-        <random-beans.version>3.7.0</random-beans.version>
         <guava.version>27.0.1-jre</guava.version>
         <jsonapi-converter.version>0.9</jsonapi-converter.version>
         <mockito.version>2.0.2-beta</mockito.version>
+        <mysql-connector-java.version>5.1.47</mysql-connector-java.version>
+        <p6spy.version>3.8.1</p6spy.version>
+        <brave-instrumentation.version>5.6.1</brave-instrumentation.version>
     </properties>
 
     <dependencyManagement>
@@ -65,10 +67,17 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
-
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-quartz</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
         <!-- Spring Cloud dependencies -->
@@ -81,13 +90,12 @@
             <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-redis</artifactId>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-sleuth</artifactId>
         </dependency>
-
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-data-jpa</artifactId>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-sleuth-zipkin</artifactId>
         </dependency>
 
         <dependency>
@@ -99,6 +107,7 @@
         <dependency>
             <groupId>mysql</groupId>
             <artifactId>mysql-connector-java</artifactId>
+            <version>${mysql-connector-java.version}</version>
         </dependency>
 
         <dependency>
@@ -111,12 +120,6 @@
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers</artifactId>
             <version>${testcontainers.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>io.github.benas</groupId>
-            <artifactId>random-beans</artifactId>
-            <version>${random-beans.version}</version>
         </dependency>
 
         <dependency>

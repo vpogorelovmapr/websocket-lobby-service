@@ -1,9 +1,8 @@
 package tv.weplay.ws.lobby.mapper;
 
+import java.util.List;
 import tv.weplay.ws.lobby.model.dto.Lobby;
 import tv.weplay.ws.lobby.model.entity.LobbyEntity;
-
-import java.util.List;
 
 public interface LobbyMapper {
 

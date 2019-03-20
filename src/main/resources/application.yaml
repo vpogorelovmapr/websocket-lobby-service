@@ -9,7 +9,7 @@ spring:
         default-requeue-rejected: false
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/lobby_dev
+    url: jdbc:mysql://localhost:3306/lobby_dev?&useSSL=false
     username: lobby_user
     password: DygrEtipVq
   jpa:
@@ -22,6 +22,17 @@ spring:
     job-store-type: jdbc
     properties:
       org.quartz.threadPool.threadCount: 10
+
+  sleuth:
+    sampler:
+      probability: 1.0 # always change to lower value in prod
+
+  zipkin:
+    base-url: http://138.68.111.27:9123/
+    service:
+      name: ${spring.application.name}
+    sender:
+      type: web
 
 rabbitmq:
   dead-letter-exchange-name: lobby_dlx_dev

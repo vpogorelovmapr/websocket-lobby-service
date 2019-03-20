@@ -1,41 +1,28 @@
 package tv.weplay.ws.lobby.converter;
 
+import static com.github.jasminb.jsonapi.JSONAPISpecConstants.*;
+
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.PropertyNamingStrategy;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.databind.node.TextNode;
+import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.node.*;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.github.jasminb.jsonapi.*;
+import com.github.jasminb.jsonapi.DeserializationFeature;
+import com.github.jasminb.jsonapi.SerializationFeature;
 import com.github.jasminb.jsonapi.annotations.Relationship;
 import com.github.jasminb.jsonapi.annotations.Type;
 import com.github.jasminb.jsonapi.exceptions.DocumentSerializationException;
 import com.github.jasminb.jsonapi.exceptions.UnregisteredTypeException;
 import com.github.jasminb.jsonapi.models.errors.Error;
-
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
-
-import static com.github.jasminb.jsonapi.JSONAPISpecConstants.*;
 
 /**
  * JSON API data converter. <br />
@@ -44,13 +31,16 @@ import static com.github.jasminb.jsonapi.JSONAPISpecConstants.*;
  */
 //TODO: Move it to separate lib. Load as maven dependency.
 public class JsonApiConverter {
+
     private final ConverterConfiguration configuration;
     private final ObjectMapper objectMapper;
     private final PropertyNamingStrategy namingStrategy;
     private final Map<Class<?>, RelationshipResolver> typedResolvers = new HashMap<>();
     private final ResourceCache resourceCache;
-    private final Set<DeserializationFeature> deserializationFeatures = DeserializationFeature.getDefaultFeatures();
-    private final Set<SerializationFeature> serializationFeatures = SerializationFeature.getDefaultFeatures();
+    private final Set<DeserializationFeature> deserializationFeatures = DeserializationFeature
+            .getDefaultFeatures();
+    private final Set<SerializationFeature> serializationFeatures = SerializationFeature
+            .getDefaultFeatures();
 
     private RelationshipResolver globalResolver;
 
@@ -59,10 +49,12 @@ public class JsonApiConverter {
     /**
      * Creates new JsonApiConverter.
      * <p>
-     *     All classes that should be handled by instance of {@link com.github.jasminb.jsonapi.ResourceConverter} must be registered
-     *     when creating a new instance of it.
+     * All classes that should be handled by instance of {@link com.github.jasminb.jsonapi.ResourceConverter}
+     * must be registered when creating a new instance of it.
      * </p>
-     * @param classes {@link Class} array of classes to be handled by this resource converter instance
+     *
+     * @param classes {@link Class} array of classes to be handled by this resource converter
+     * instance
      */
     public JsonApiConverter(Class<?>... classes) {
         this(null, null, classes);
@@ -71,11 +63,13 @@ public class JsonApiConverter {
     /**
      * Creates new JsonApiConverter.
      * <p>
-     *     All classes that should be handled by instance of {@link com.github.jasminb.jsonapi.ResourceConverter} must be registered
-     *     when creating a new instance of it.
+     * All classes that should be handled by instance of {@link com.github.jasminb.jsonapi.ResourceConverter}
+     * must be registered when creating a new instance of it.
      * </p>
+     *
      * @param baseURL {@link String} base URL, eg. https://api.mysite.com
-     * @param classes {@link Class} array of classes to be handled by this resource converter instance
+     * @param classes {@link Class} array of classes to be handled by this resource converter
+     * instance
      */
     public JsonApiConverter(String baseURL, Class<?>... classes) {
         this(null, baseURL, classes);
@@ -87,9 +81,11 @@ public class JsonApiConverter {
 
     /**
      * Creates new JsonApiConverter.
+     *
      * @param mapper {@link ObjectMapper} custom mapper to be used for resource parsing
      * @param baseURL {@link String} base URL, eg. https://api.mysite.com
-     * @param classes {@link Class} array of classes to be handled by this resource converter instance
+     * @param classes {@link Class} array of classes to be handled by this resource converter
+     * instance
      */
     public JsonApiConverter(ObjectMapper mapper, String baseURL, Class<?>... classes) {
         this.configuration = new ConverterConfiguration(classes);
@@ -115,6 +111,7 @@ public class JsonApiConverter {
 
     /**
      * Converts raw data input into requested target type.
+     *
      * @param data raw data
      * @param clazz target object
      * @param <T> type
@@ -122,12 +119,13 @@ public class JsonApiConverter {
      * @throws RuntimeException in case conversion fails
      */
     @Deprecated
-    public <T> T readObject(byte [] data, Class<T> clazz) {
+    public <T> T readObject(byte[] data, Class<T> clazz) {
         return readDocument(data, clazz).get();
     }
 
     /**
      * Converts rawdata input into a collection of requested output objects.
+     *
      * @param data raw data input
      * @param clazz target type
      * @param <T> type
@@ -135,7 +133,7 @@ public class JsonApiConverter {
      * @throws RuntimeException in case conversion fails
      */
     @Deprecated
-    public <T> List<T> readObjectCollection(byte [] data, Class<T> clazz) {
+    public <T> List<T> readObjectCollection(byte[] data, Class<T> clazz) {
         return readDocumentCollection(data, clazz).get();
     }
 
@@ -143,8 +141,13 @@ public class JsonApiConverter {
         return readDocument(new ByteArrayInputStream(data.getBytes()), clazz);
     }
 
+    public <T> T readObject(String data, Class<T> clazz) {
+        return readDocument(new ByteArrayInputStream(data.getBytes()), clazz).get();
+    }
+
     /**
      * Reads JSON API spec document and converts it into target type.
+     *
      * @param data {@link byte} raw data (server response)
      * @param clazz {@link Class} target type
      * @param <T> type
@@ -156,6 +159,7 @@ public class JsonApiConverter {
 
     /**
      * Reads JSON API spec document and converts it into target type.
+     *
      * @param dataStream {@link byte} raw dataStream (server response)
      * @param clazz {@link Class} target type
      * @param <T> type
@@ -219,6 +223,7 @@ public class JsonApiConverter {
 
     /**
      * Reads JSON API spec document and converts it into collection of target type objects.
+     *
      * @param data {@link byte} raw data (server response)
      * @param clazz {@link Class} target type
      * @param <T> type
@@ -227,14 +232,17 @@ public class JsonApiConverter {
     public <T> JSONAPIDocument<List<T>> readDocumentCollection(byte[] data, Class<T> clazz) {
         return readDocumentCollection(new ByteArrayInputStream(data), clazz);
     }
+
     /**
      * Reads JSON API spec document and converts it into collection of target type objects.
+     *
      * @param dataStream {@link InputStream} input stream
      * @param clazz {@link Class} target type
      * @param <T> type
      * @return {@link JSONAPIDocument}
      */
-    public <T> JSONAPIDocument<List<T>> readDocumentCollection(InputStream dataStream, Class<T> clazz) {
+    public <T> JSONAPIDocument<List<T>> readDocumentCollection(InputStream dataStream,
+            Class<T> clazz) {
         try {
             resourceCache.init();
 
@@ -291,13 +299,13 @@ public class JsonApiConverter {
     }
 
     /**
-     * Converts provided input into a target object. After conversion completes any relationships defined are resolved.
+     * Converts provided input into a target object. After conversion completes any relationships
+     * defined are resolved.
+     *
      * @param source JSON source
      * @param clazz target type
      * @param <T> type
      * @return converted target object
-     * @throws IOException
-     * @throws IllegalAccessException
      */
     private <T> T readObject(JsonNode source, Class<T> clazz, boolean handleRelationships)
             throws IOException, IllegalAccessException, InstantiationException {
@@ -354,11 +362,11 @@ public class JsonApiConverter {
 
 
     /**
-     * Converts included data and returns it as pairs of its unique identifiers and converted types.
+     * Converts included data and returns it as pairs of its unique identifiers and converted
+     * types.
+     *
      * @param parent data source
      * @return identifier/object pairs
-     * @throws IOException
-     * @throws IllegalAccessException
      */
     private Map<String, Object> parseIncluded(JsonNode parent)
             throws IOException, IllegalAccessException, InstantiationException {
@@ -373,7 +381,10 @@ public class JsonApiConverter {
                 for (String identifier : includedResources.keySet()) {
                     result.put(identifier, includedResources.get(identifier));
                 }
-                Map<String, Map<String, JsonNode>> incl = objectMapper.convertValue(parent.get(INCLUDED), new TypeReference<Map<String, Map<String, JsonNode>>>(){});
+                Map<String, Map<String, JsonNode>> incl = objectMapper
+                        .convertValue(parent.get(INCLUDED),
+                                new TypeReference<Map<String, Map<String, JsonNode>>>() {
+                                });
                 List<JsonNode> nodes = incl.values().stream()
                         .map(Map::values)
                         .flatMap(Collection::stream)
@@ -383,7 +394,7 @@ public class JsonApiConverter {
                     // Handle relationships
 //                    JsonNode node = includedArray.get(i);
                     Object resourceObject = includedResources.get(createIdentifier(node));
-                    if (resourceObject != null){
+                    if (resourceObject != null) {
                         handleRelationships(node, resourceObject);
                     }
                 }
@@ -395,18 +406,19 @@ public class JsonApiConverter {
 
     /**
      * Parses out included resources excluding relationships.
+     *
      * @param parent root node
      * @return map of identifier/resource pairs
-     * @throws IOException
-     * @throws IllegalAccessException
-     * @throws InstantiationException
      */
     private Map<String, Object> getIncludedResources(JsonNode parent)
             throws IOException, IllegalAccessException, InstantiationException {
         Map<String, Object> result = new HashMap<>();
 
         if (parent.has(INCLUDED)) {
-            Map<String, Map<String, JsonNode>> incl = objectMapper.convertValue(parent.get(INCLUDED), new TypeReference<Map<String, Map<String, JsonNode>>>(){});
+            Map<String, Map<String, JsonNode>> incl = objectMapper
+                    .convertValue(parent.get(INCLUDED),
+                            new TypeReference<Map<String, Map<String, JsonNode>>>() {
+                            });
             List<JsonNode> nodes = incl.values().stream()
                     .map(Map::values)
                     .flatMap(Collection::stream)
@@ -422,8 +434,10 @@ public class JsonApiConverter {
                     if (object != null) {
                         result.put(createIdentifier(jsonNode), object);
                     }
-                } else if (!deserializationFeatures.contains(DeserializationFeature.ALLOW_UNKNOWN_INCLUSIONS)) {
-                    throw new IllegalArgumentException("Included section contains unknown resource type: " + type);
+                } else if (!deserializationFeatures
+                        .contains(DeserializationFeature.ALLOW_UNKNOWN_INCLUSIONS)) {
+                    throw new IllegalArgumentException(
+                            "Included section contains unknown resource type: " + type);
                 }
             }
         }
@@ -442,7 +456,8 @@ public class JsonApiConverter {
                 String field = fields.next();
 
                 JsonNode relationship = relationships.get(field);
-                Field relationshipField = configuration.getRelationshipField(object.getClass(), field);
+                Field relationshipField = configuration
+                        .getRelationshipField(object.getClass(), field);
 
                 if (relationshipField != null) {
                     // Get target type
@@ -455,17 +470,21 @@ public class JsonApiConverter {
 
                     // Handle meta if present
                     if (relationship.has(META)) {
-                        Field relationshipMetaField = configuration.getRelationshipMetaField(object.getClass(), field);
+                        Field relationshipMetaField = configuration
+                                .getRelationshipMetaField(object.getClass(), field);
 
                         if (relationshipMetaField != null) {
-                            relationshipMetaField.set(object, objectMapper.treeToValue(relationship.get(META),
-                                    configuration.getRelationshipMetaType(object.getClass(), field)));
+                            relationshipMetaField
+                                    .set(object, objectMapper.treeToValue(relationship.get(META),
+                                            configuration.getRelationshipMetaType(object.getClass(),
+                                                    field)));
                         }
                     }
 
                     // Handle links if present
                     if (relationship.has(LINKS)) {
-                        Field relationshipLinksField = configuration.getRelationshipLinksField(object.getClass(), field);
+                        Field relationshipLinksField = configuration
+                                .getRelationshipLinksField(object.getClass(), field);
                         if (relationshipLinksField != null) {
                             Links links = new Links(mapLinks(relationship.get(LINKS)));
                             relationshipLinksField.set(object, links);
@@ -473,12 +492,14 @@ public class JsonApiConverter {
                     }
 
                     // Get resolve flag
-                    boolean resolveRelationship = configuration.getFieldRelationship(relationshipField).resolve();
+                    boolean resolveRelationship = configuration
+                            .getFieldRelationship(relationshipField).resolve();
                     RelationshipResolver resolver = getResolver(type);
 
                     // Use resolver if possible
                     if (resolveRelationship && resolver != null && relationship.has(LINKS)) {
-                        String relType = configuration.getFieldRelationship(relationshipField).relType().getRelName();
+                        String relType = configuration.getFieldRelationship(relationshipField)
+                                .relType().getRelName();
                         JsonNode linkNode = relationship.get(LINKS).get(relType);
 
                         String link;
@@ -486,15 +507,20 @@ public class JsonApiConverter {
                         if (linkNode != null && ((link = getLink(linkNode)) != null)) {
                             if (isCollection(relationship)) {
                                 relationshipField.set(object,
-                                        readDocumentCollection(new ByteArrayInputStream(resolver.resolve(link)), type).get());
+                                        readDocumentCollection(
+                                                new ByteArrayInputStream(resolver.resolve(link)),
+                                                type).get());
                             } else {
-                                relationshipField.set(object, readDocument(new ByteArrayInputStream(resolver.resolve(link)), type).get());
+                                relationshipField.set(object, readDocument(
+                                        new ByteArrayInputStream(resolver.resolve(link)), type)
+                                        .get());
                             }
                         }
                     } else {
                         if (isCollection(relationship)) {
                             @SuppressWarnings("rawtypes")
-                            Collection elements = createCollectionInstance(relationshipField.getType());
+                            Collection elements = createCollectionInstance(
+                                    relationshipField.getType());
 
                             for (JsonNode element : relationship.get(DATA)) {
                                 try {
@@ -505,7 +531,8 @@ public class JsonApiConverter {
                                 } catch (UnregisteredTypeException ex) {
                                     // Don't raise exception if the relationship is an interface and that we accept new type
                                     if (relationshipField.getType().isInterface() &&
-                                            !deserializationFeatures.contains(DeserializationFeature.ALLOW_UNKNOWN_TYPE_IN_RELATIONSHIP)) {
+                                            !deserializationFeatures.contains(
+                                                    DeserializationFeature.ALLOW_UNKNOWN_TYPE_IN_RELATIONSHIP)) {
                                         throw ex;
                                     }
                                 }
@@ -513,14 +540,16 @@ public class JsonApiConverter {
                             relationshipField.set(object, elements);
                         } else {
                             try {
-                                Object relationshipObject = parseRelationship(relationship.get(DATA), type);
+                                Object relationshipObject = parseRelationship(
+                                        relationship.get(DATA), type);
                                 if (relationshipObject != null) {
                                     relationshipField.set(object, relationshipObject);
                                 }
                             } catch (UnregisteredTypeException ex) {
                                 // Don't raise exception if the relationship is an interface and that we accept new type
                                 if (relationshipField.getType().isInterface() &&
-                                        !deserializationFeatures.contains(DeserializationFeature.ALLOW_UNKNOWN_TYPE_IN_RELATIONSHIP)) {
+                                        !deserializationFeatures.contains(
+                                                DeserializationFeature.ALLOW_UNKNOWN_TYPE_IN_RELATIONSHIP)) {
                                     throw ex;
                                 }
                             }
@@ -532,13 +561,16 @@ public class JsonApiConverter {
     }
 
     /**
-     * Accepts a JsonNode which encapsulates a link.  The link may be represented as a simple string or as
-     * <a href="http://jsonapi.org/format/#document-links">link</a> object.  This method introspects on the
-     * {@code linkNode}, returning the value of the {@code href} member, if it exists, or returns the string form
-     * of the {@code linkNode} if it doesn't.
+     * Accepts a JsonNode which encapsulates a link.  The link may be represented as a simple string
+     * or as
+     * <a href="http://jsonapi.org/format/#document-links">link</a> object.  This method introspects
+     * on the
+     * {@code linkNode}, returning the value of the {@code href} member, if it exists, or returns
+     * the string form of the {@code linkNode} if it doesn't.
      * <p>
      * <em>Package-private for unit testing.</em>
      * </p>
+     *
      * @param linkNode a JsonNode representing a link, may return {@code null}
      * @return the link URL
      */
@@ -554,12 +586,10 @@ public class JsonApiConverter {
 
     /**
      * Creates relationship object by consuming provided 'data' node.
+     *
      * @param relationshipDataNode relationship data node
      * @param type object type
      * @return created object or <code>null</code> in case data node is not valid
-     * @throws IOException
-     * @throws IllegalAccessException
-     * @throws InstantiationException
      */
     private Object parseRelationship(JsonNode relationshipDataNode, Class<?> type)
             throws IOException, IllegalAccessException, InstantiationException {
@@ -583,8 +613,9 @@ public class JsonApiConverter {
     }
 
     /**
-     * Generates unique resource identifier by combining resource type and resource id fields. <br />
-     * By specification id/type combination guarantees uniqueness.
+     * Generates unique resource identifier by combining resource type and resource id fields. <br
+     * /> By specification id/type combination guarantees uniqueness.
+     *
      * @param object data object
      * @return concatenated id and type values
      */
@@ -593,8 +624,11 @@ public class JsonApiConverter {
 
         String id = idNode != null ? idNode.asText().trim() : "";
 
-        if (id.isEmpty() && deserializationFeatures.contains(DeserializationFeature.REQUIRE_RESOURCE_ID)) {
-            throw new IllegalArgumentException(String.format("Resource must have a non null and non-empty 'id' attribute! %s", object.toString()));
+        if (id.isEmpty() && deserializationFeatures
+                .contains(DeserializationFeature.REQUIRE_RESOURCE_ID)) {
+            throw new IllegalArgumentException(
+                    String.format("Resource must have a non null and non-empty 'id' attribute! %s",
+                            object.toString()));
         }
 
         String type = object.get(TYPE).asText();
@@ -603,6 +637,7 @@ public class JsonApiConverter {
 
     /**
      * Sets an id attribute value to a target object.
+     *
      * @param target target POJO
      * @param idValue id node
      * @throws IllegalAccessException thrown in case target field is not accessible
@@ -621,7 +656,6 @@ public class JsonApiConverter {
      *
      * @param source object to read @Id value from
      * @return {@link String} id or <code>null</code>
-     * @throws IllegalAccessException
      */
     private String getIdValue(Object source) throws IllegalAccessException {
         Field idField = configuration.getIdField(source.getClass());
@@ -632,6 +666,7 @@ public class JsonApiConverter {
 
     /**
      * Checks if <code>data</code> object is an array or just single object holder.
+     *
      * @param source data node
      * @return <code>true</code> if data node is an array else <code>false</code>
      */
@@ -643,13 +678,11 @@ public class JsonApiConverter {
 
     /**
      * Converts input object to byte array.
+     *
      * @param object input object
      * @return raw bytes
-     * @throws JsonProcessingException
-     * @throws IllegalAccessException
      */
-    @Deprecated
-    public byte [] writeObject(Object object) throws JsonProcessingException, IllegalAccessException {
+    public byte[] writeObject(Object object) {
         try {
             return writeDocument(new JSONAPIDocument<>(object));
         } catch (DocumentSerializationException e) {
@@ -658,23 +691,28 @@ public class JsonApiConverter {
     }
 
     /**
-     * Serializes provided {@link JSONAPIDocument} into JSON API Spec compatible byte representation.
+     * Serializes provided {@link JSONAPIDocument} into JSON API Spec compatible byte
+     * representation.
+     *
      * @param document {@link JSONAPIDocument} document to serialize
      * @return serialized content in bytes
      * @throws DocumentSerializationException thrown in case serialization fails
      */
-    public byte [] writeDocument(JSONAPIDocument<?> document) throws DocumentSerializationException {
+    public byte[] writeDocument(JSONAPIDocument<?> document) throws DocumentSerializationException {
         return writeDocument(document, null);
     }
 
     /**
-     * Serializes provided {@link JSONAPIDocument} into JSON API Spec compatible byte representation.
+     * Serializes provided {@link JSONAPIDocument} into JSON API Spec compatible byte
+     * representation.
+     *
      * @param document {@link JSONAPIDocument} document to serialize
-     * @param settings {@link SerializationSettings} settings that override global serialization settings
+     * @param settings {@link SerializationSettings} settings that override global serialization
+     * settings
      * @return serialized content in bytes
      * @throws DocumentSerializationException thrown in case serialization fails
      */
-    public byte [] writeDocument(JSONAPIDocument<?> document, SerializationSettings settings)
+    public byte[] writeDocument(JSONAPIDocument<?> document, SerializationSettings settings)
             throws DocumentSerializationException {
         try {
             resourceCache.init();
@@ -711,14 +749,17 @@ public class JsonApiConverter {
         }
     }
 
-    private void serializeMeta(JSONAPIDocument<?> document, ObjectNode resultNode, SerializationSettings settings) {
+    private void serializeMeta(JSONAPIDocument<?> document, ObjectNode resultNode,
+            SerializationSettings settings) {
         // Handle global links and meta
-        if (document.getMeta() != null && !document.getMeta().isEmpty() && shouldSerializeMeta(settings)) {
+        if (document.getMeta() != null && !document.getMeta().isEmpty() && shouldSerializeMeta(
+                settings)) {
             resultNode.set(META, objectMapper.valueToTree(document.getMeta()));
         }
     }
 
-    private void serializeLinks(JSONAPIDocument<?> document, ObjectNode resultNode, SerializationSettings settings) {
+    private void serializeLinks(JSONAPIDocument<?> document, ObjectNode resultNode,
+            SerializationSettings settings) {
         if (document.getLinks() != null && !document.getLinks().getLinks().isEmpty() &&
                 shouldSerializeLinks(settings)) {
             resultNode.set(LINKS, objectMapper.valueToTree(document.getLinks()).get(LINKS));
@@ -726,25 +767,30 @@ public class JsonApiConverter {
     }
 
     /**
-     * Serializes provided {@link JSONAPIDocument} into JSON API Spec compatible byte representation.
+     * Serializes provided {@link JSONAPIDocument} into JSON API Spec compatible byte
+     * representation.
+     *
      * @param documentCollection {@link JSONAPIDocument} document collection to serialize
      * @return serialized content in bytes
      * @throws DocumentSerializationException thrown in case serialization fails
      */
-    public byte [] writeDocumentCollection(JSONAPIDocument<? extends Iterable<?>> documentCollection)
+    public byte[] writeDocumentCollection(JSONAPIDocument<? extends Iterable<?>> documentCollection)
             throws DocumentSerializationException {
         return writeDocumentCollection(documentCollection, null);
     }
 
     /**
-     * Serializes provided {@link JSONAPIDocument} into JSON API Spec compatible byte representation.
+     * Serializes provided {@link JSONAPIDocument} into JSON API Spec compatible byte
+     * representation.
+     *
      * @param documentCollection {@link JSONAPIDocument} document collection to serialize
-     * @param serializationSettings {@link SerializationSettings} settings that override global serialization settings
+     * @param serializationSettings {@link SerializationSettings} settings that override global
+     * serialization settings
      * @return serialized content in bytes
      * @throws DocumentSerializationException thrown in case serialization fails
      */
-    public byte [] writeDocumentCollection(JSONAPIDocument<? extends Iterable<?>> documentCollection,
-                                           SerializationSettings serializationSettings)
+    public byte[] writeDocumentCollection(JSONAPIDocument<? extends Iterable<?>> documentCollection,
+            SerializationSettings serializationSettings)
             throws DocumentSerializationException {
 
         try {
@@ -774,8 +820,9 @@ public class JsonApiConverter {
     }
 
 
-    private ObjectNode getDataNode(Object object, Map<String, Map<String, ObjectNode>> includedContainer,
-                                   SerializationSettings settings) throws IllegalAccessException {
+    private ObjectNode getDataNode(Object object,
+            Map<String, Map<String, ObjectNode>> includedContainer,
+            SerializationSettings settings) throws IllegalAccessException {
         ObjectNode dataNode = objectMapper.createObjectNode();
         ObjectNode attributesNode = objectMapper.valueToTree(object);
         String resourceId = getIdValue(object);
@@ -804,7 +851,8 @@ public class JsonApiConverter {
         if (resourceId != null) {
             dataNode.put(ID, resourceId);
 
-            resourceCache.cache(resourceId.concat(configuration.getTypeName(object.getClass())), null);
+            resourceCache
+                    .cache(resourceId.concat(configuration.getTypeName(object.getClass())), null);
         }
         dataNode.set(ATTRIBUTES, attributesNode);
 
@@ -820,7 +868,8 @@ public class JsonApiConverter {
 
                 if (relationshipObject != null) {
 
-                    Relationship relationship = configuration.getFieldRelationship(relationshipField);
+                    Relationship relationship = configuration
+                            .getFieldRelationship(relationshipField);
 
                     // In case serialisation is disabled for a given relationship, skip it
                     if (!relationship.serialise()) {
@@ -832,7 +881,8 @@ public class JsonApiConverter {
                     ObjectNode relationshipDataNode = objectMapper.createObjectNode();
                     relationshipsNode.set(relationshipName, relationshipDataNode);
 
-                    JsonNode relationshipMeta = getRelationshipMeta(object, relationshipName, settings);
+                    JsonNode relationshipMeta = getRelationshipMeta(object, relationshipName,
+                            settings);
                     if (relationshipMeta != null) {
                         relationshipDataNode.set(META, relationshipMeta);
 
@@ -842,7 +892,8 @@ public class JsonApiConverter {
                         removeField(attributesNode, refField);
                     }
 
-                    JsonNode relationshipLinks = getRelationshipLinks(object, relationship, selfHref, settings);
+                    JsonNode relationshipLinks = getRelationshipLinks(object, relationship,
+                            selfHref, settings);
                     if (relationshipLinks != null) {
                         relationshipDataNode.set(LINKS, relationshipLinks);
 
@@ -866,19 +917,23 @@ public class JsonApiConverter {
                             dataArrayNode.add(identifierNode);
 
                             // Handle included data
-                            if (shouldSerializeRelationship(relationshipName, settings) && idValue != null) {
+                            if (shouldSerializeRelationship(relationshipName, settings)
+                                    && idValue != null) {
                                 includedContainer.putIfAbsent(relationshipType, new HashMap<>());
                                 String identifier = idValue.concat(relationshipType);
                                 if (!resourceCache.contains(identifier)) {
-                                    Map<String, ObjectNode> nodes = includedContainer.get(relationshipType);
-                                    nodes.put(idValue, getDataNode(element, includedContainer, settings));
+                                    Map<String, ObjectNode> nodes = includedContainer
+                                            .get(relationshipType);
+                                    nodes.put(idValue,
+                                            getDataNode(element, includedContainer, settings));
                                 }
                             }
                         }
                         relationshipDataNode.set(DATA, dataArrayNode);
 
                     } else {
-                        String relationshipType = configuration.getTypeName(relationshipObject.getClass());
+                        String relationshipType = configuration
+                                .getTypeName(relationshipObject.getClass());
 
                         String idValue = getIdValue(relationshipObject);
 
@@ -890,11 +945,13 @@ public class JsonApiConverter {
 
                         includedContainer.putIfAbsent(relationshipType, new HashMap<>());
 
-                        if (shouldSerializeRelationship(relationshipName, settings) && idValue != null) {
+                        if (shouldSerializeRelationship(relationshipName, settings)
+                                && idValue != null) {
                             String identifier = idValue.concat(relationshipType);
 //                            if (!includedContainer.containsKey(identifier)) {
-                                Map<String, ObjectNode> nodes = includedContainer.get(relationshipType);
-                            nodes.put(idValue, getDataNode(relationshipObject, includedContainer, settings));
+                            Map<String, ObjectNode> nodes = includedContainer.get(relationshipType);
+                            nodes.put(idValue,
+                                    getDataNode(relationshipObject, includedContainer, settings));
 //                            }
                         }
                     }
@@ -923,18 +980,17 @@ public class JsonApiConverter {
      *
      * @param objects List of input objects
      * @return raw bytes
-     * @throws JsonProcessingException
-     * @throws IllegalAccessException
      * @deprecated use writeDocumentCollection instead
      */
     @Deprecated
-    public <T> byte[] writeObjectCollection(Iterable<T> objects) throws JsonProcessingException, IllegalAccessException {
+    public <T> byte[] writeObjectCollection(Iterable<T> objects)
+            throws JsonProcessingException, IllegalAccessException {
         try {
             return writeDocumentCollection(new JSONAPIDocument<>(objects));
         } catch (DocumentSerializationException e) {
             if (e.getCause() instanceof JsonProcessingException) {
                 throw (JsonProcessingException) e.getCause();
-            } else if (e.getCause() instanceof  IllegalAccessException) {
+            } else if (e.getCause() instanceof IllegalAccessException) {
                 throw (IllegalAccessException) e.getCause();
             }
             throw new RuntimeException(e.getCause());
@@ -943,6 +999,7 @@ public class JsonApiConverter {
 
     /**
      * Checks if provided type is registered with this converter instance.
+     *
      * @param type class to check
      * @return returns <code>true</code> if type is registered, else <code>false</code>
      */
@@ -951,8 +1008,9 @@ public class JsonApiConverter {
     }
 
     /**
-     * Returns relationship resolver for given type. In case no specific type resolver is registered, global resolver
-     * is returned.
+     * Returns relationship resolver for given type. In case no specific type resolver is
+     * registered, global resolver is returned.
+     *
      * @param type relationship object type
      * @return relationship resolver or <code>null</code>
      */
@@ -962,10 +1020,11 @@ public class JsonApiConverter {
     }
 
     /**
-     * Deserializes a <a href="http://jsonapi.org/format/#document-links">JSON-API links object</a> to a {@code Map}
-     * keyed by the link name.
+     * Deserializes a <a href="http://jsonapi.org/format/#document-links">JSON-API links object</a>
+     * to a {@code Map} keyed by the link name.
      * <p>
-     * The {@code linksObject} may represent links in string form or object form; both are supported by this method.
+     * The {@code linksObject} may represent links in string form or object form; both are supported
+     * by this method.
      * </p>
      * <p>
      * E.g.
@@ -1018,9 +1077,9 @@ public class JsonApiConverter {
     }
 
     /**
-     * Deserializes a <a href="http://jsonapi.org/format/#document-meta">JSON-API meta object</a> to a {@code Map}
-     * keyed by the member names.  Because {@code meta} objects contain arbitrary information, the values in the
-     * map are of unknown type.
+     * Deserializes a <a href="http://jsonapi.org/format/#document-meta">JSON-API meta object</a> to
+     * a {@code Map} keyed by the member names.  Because {@code meta} objects contain arbitrary
+     * information, the values in the map are of unknown type.
      *
      * @param metaNode a JsonNode representing a meta object
      * @return a Map of the meta information, keyed by member name.
@@ -1038,7 +1097,8 @@ public class JsonApiConverter {
         return null;
     }
 
-    private ObjectNode addIncludedSection(ObjectNode rootNode, Map<String, Map<String, ObjectNode>> includedDataMap) {
+    private ObjectNode addIncludedSection(ObjectNode rootNode,
+            Map<String, Map<String, ObjectNode>> includedDataMap) {
         if (!includedDataMap.isEmpty()) {
             ObjectNode includedArray = objectMapper.convertValue(includedDataMap, ObjectNode.class);
             rootNode.set(INCLUDED, includedArray);
@@ -1050,11 +1110,13 @@ public class JsonApiConverter {
     /**
      * Resolves actual type to be used for resource deserialization.
      * <p>
-     *     If user provides class with type annotation that is equal to the type value in response data, same class
-     *     will be used. If provided class is super type of actual class that is resolved using response type value,
-     *     subclass will be returned. This allows for deserializing responses in use cases where one of many subtypes
-     *     can be returned by the server and user is not sure which one will it be.
+     * If user provides class with type annotation that is equal to the type value in response data,
+     * same class will be used. If provided class is super type of actual class that is resolved
+     * using response type value, subclass will be returned. This allows for deserializing responses
+     * in use cases where one of many subtypes can be returned by the server and user is not sure
+     * which one will it be.
      * </p>
+     *
      * @param object JSON object containing type value
      * @param userType provided user type
      * @return {@link Class}
@@ -1092,10 +1154,12 @@ public class JsonApiConverter {
             return new HashSet<>();
         }
 
-        throw new RuntimeException("Unable to create appropriate instance for type: " + type.getSimpleName());
+        throw new RuntimeException(
+                "Unable to create appropriate instance for type: " + type.getSimpleName());
     }
 
-    private JsonNode getRelationshipMeta(Object source, String relationshipName, SerializationSettings settings)
+    private JsonNode getRelationshipMeta(Object source, String relationshipName,
+            SerializationSettings settings)
             throws IllegalAccessException {
         if (shouldSerializeMeta(settings)) {
             Field relationshipMetaField = configuration
@@ -1108,8 +1172,9 @@ public class JsonApiConverter {
         return null;
     }
 
-    private JsonNode getResourceLinks(Object resource, ObjectNode serializedResource, String resourceId,
-                                      SerializationSettings settings) throws IllegalAccessException {
+    private JsonNode getResourceLinks(Object resource, ObjectNode serializedResource,
+            String resourceId,
+            SerializationSettings settings) throws IllegalAccessException {
         Type type = configuration.getType(resource.getClass());
 
         // Check if there are user-provided links
@@ -1135,7 +1200,8 @@ public class JsonApiConverter {
 
             // If link path is defined in type and id is not null and user did not explicitly set link value, create it
             if (!type.path().trim().isEmpty() && !linkMap.containsKey(SELF) && resourceId != null) {
-                linkMap.put(SELF, new Link(createURL(baseURL, type.path().replace("{id}", resourceId))));
+                linkMap.put(SELF,
+                        new Link(createURL(baseURL, type.path().replace("{id}", resourceId))));
             }
 
             // If there is at least one link generated, serialize and return
@@ -1146,8 +1212,9 @@ public class JsonApiConverter {
         return null;
     }
 
-    private JsonNode getRelationshipLinks(Object source, Relationship relationship, String ownerLink,
-                                          SerializationSettings settings) throws IllegalAccessException {
+    private JsonNode getRelationshipLinks(Object source, Relationship relationship,
+            String ownerLink,
+            SerializationSettings settings) throws IllegalAccessException {
         if (shouldSerializeLinks(settings)) {
             Links links = null;
 
@@ -1194,9 +1261,11 @@ public class JsonApiConverter {
         return result;
     }
 
-    private boolean shouldSerializeRelationship(String relationshipName, SerializationSettings settings) {
+    private boolean shouldSerializeRelationship(String relationshipName,
+            SerializationSettings settings) {
         if (settings != null) {
-            if (settings.isRelationshipIncluded(relationshipName) && !settings.isRelationshipExcluded(relationshipName)) {
+            if (settings.isRelationshipIncluded(relationshipName) && !settings
+                    .isRelationshipExcluded(relationshipName)) {
                 return true;
             }
 
@@ -1230,9 +1299,10 @@ public class JsonApiConverter {
 
     /**
      * Registers new type to be used with this converter instance.
+     *
      * @param type {@link Class} type to register
-     * @return <code>true</code> if type was registed, else <code>false</code> (in case type was registered already or
-     * type is not eligible for registering ie. missing required annotations)
+     * @return <code>true</code> if type was registed, else <code>false</code> (in case type was
+     * registered already or type is not eligible for registering ie. missing required annotations)
      */
     public boolean registerType(Class<?> type) {
         if (!configuration.isRegisteredType(type) && ConverterConfiguration.isEligibleType(type)) {

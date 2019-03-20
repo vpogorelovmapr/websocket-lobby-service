@@ -72,21 +72,6 @@ public class LobbyServiceTest extends AbstractEnd2EndTestBase {
     }
 
     @Test
-    public void startVotingWithAllCaptainsOffline() {
-        Lobby lobby = getLobby(DEFAULT_ID + 1);
-        lobby.getMatch().getMembers().forEach(member -> member.setStatus(MemberStatus.OFFLINE));
-        lobbyService.create(lobby);
-
-        lobbyService.startVoting(lobby.getId());
-
-        Lobby actual = lobbyService.findById(lobby.getId());
-
-        assertThat(actual).isNotNull();
-        assertThat(actual.getId()).isEqualTo(lobby.getId());
-        assertThat(actual.getStatus()).isEqualTo(LobbyStatus.CANCELED);
-    }
-
-    @Test
     public void updateMemberStatus() {
         Lobby lobby = getLobby(DEFAULT_ID);
         lobbyService.create(lobby);
@@ -135,11 +120,11 @@ public class LobbyServiceTest extends AbstractEnd2EndTestBase {
     @Test
     public void voteCardByServer() {
         Lobby lobby = getLobby(DEFAULT_ID);
-        lobbyService.create(lobby);
+        Lobby actual = lobbyService.create(lobby);
 
         lobbyService.voteCardByServer(lobby.getId(), 1L, LobbyMapStatus.SERVER_PICK);
 
-        Lobby actual = lobbyService.findById(lobby.getId());
+        actual = lobbyService.findById(lobby.getId());
 
         assertThat(actual).isNotNull();
         assertThat(actual.getId()).isEqualTo(lobby.getId());
@@ -202,7 +187,12 @@ public class LobbyServiceTest extends AbstractEnd2EndTestBase {
                 .status(LobbyMapStatus.NONE)
                 .member(Member.builder().id(DEFAULT_ID + 1).build())
                 .build();
-        return Arrays.asList(first, second);
+        LobbyMap third = LobbyMap.builder()
+                .id(DEFAULT_ID + 2)
+                .status(LobbyMapStatus.NONE)
+                .member(Member.builder().id(DEFAULT_ID + 2).build())
+                .build();
+        return Arrays.asList(first, second, third);
     }
 
     private TournamentMember getTournamentMember(Long id) {

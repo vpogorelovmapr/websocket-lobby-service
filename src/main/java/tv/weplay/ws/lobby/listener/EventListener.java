@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.cloud.sleuth.annotation.NewSpan;
+import org.springframework.cloud.sleuth.annotation.SpanTag;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
 import tv.weplay.ws.lobby.common.EventTypes;
@@ -20,38 +22,36 @@ public class EventListener {
     private final ObjectMapper objectMapper;
     private final JsonApiConverter converter;
 
+    @NewSpan
     @RabbitListener(queues = "#{rabbitmqProperties.incomingTournamentsQueueName}")
-    public void handleLobbyCreationEvent(String rawEvent) throws Exception {
+    public void handleLobbyCreationEvent(@SpanTag("event") String rawEvent) throws Exception {
         log.info("Raw event received: {}", rawEvent);
         Event event = objectMapper.readValue(rawEvent, Event.class);
         handleLobbyCreatedEvent(event);
     }
 
+    @NewSpan
     @RabbitListener(queues = "#{rabbitmqProperties.incomingUiQueueName}")
-    public void handleUIEvent(String rawEvent, @Header("user_id") Long userId) throws Exception {
+    public void handleUIEvent(@SpanTag("event") String rawEvent, @SpanTag("user_id") @Header("user_id") Long userId) throws Exception {
         log.info("Raw event received: {}", rawEvent);
         Event event = objectMapper.readValue(rawEvent, Event.class);
         handleUIEvent(userId, event);
     }
 
     private void handleLobbyCreatedEvent(Event event) {
-        try {
-            if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CREATED)) {
-                Lobby lobby = converter.readDocument(event.getEventData().toString(), Lobby.class).get();
-                lobbyService.create(lobby);
-            }
-        } catch (Exception e) {
-            log.info("Invalid lobby event", e);
+        if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CREATE_REQUEST)) {
+            Lobby lobby = converter.readObject(event.getEventData().toString(), Lobby.class);
+            lobbyService.create(lobby);
         }
     }
 
     private void handleUIEvent(@Header("user_id") Long userId, Event event) {
-        if (event.getEventMetaData().getType().equals(EventTypes.MEMBER_EVENT)) {
-            MatchMember member = converter.readDocument(event.getEventData().toString(), MatchMember.class).get();
-            log.info("Member: {}", member);
+        if (event.getEventMetaData().getType().equals(EventTypes.MEMBER)) {
+            MatchMember member = converter
+                    .readObject(event.getEventData().toString(), MatchMember.class);
             lobbyService.updateMemberStatus(member.getLobby().getId(), member.getId());
-        } else if (event.getEventMetaData().getType().equals(EventTypes.VOTE_EVENT)) {
-            LobbyMap map = converter.readDocument(event.getEventData().toString(), LobbyMap.class).get();
+        } else if (event.getEventMetaData().getType().equals(EventTypes.VOTE)) {
+            LobbyMap map = converter.readObject(event.getEventData().toString(), LobbyMap.class);
             lobbyService.voteCardByUser(map.getLobby().getId(), map, userId);
         }
     }
