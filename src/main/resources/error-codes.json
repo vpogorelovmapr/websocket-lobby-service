@@ -15,9 +15,9 @@
     "id": 4,
     "description": "Invalid card id. This card id cannot be picked/dropped"
   },
-  "ACTION_AFTER_LOBBY_CANCELED": {
+  "LOBBY_NOT_EXIST": {
     "id": 5,
-    "description": "This action cannot be done. Lobby is already canceled"
+    "description": "Lobby doesn't exist. Probably it was canceled or ended"
   },
   "ACTION_AFTER_LOBBY_ENDED": {
     "id": 6,

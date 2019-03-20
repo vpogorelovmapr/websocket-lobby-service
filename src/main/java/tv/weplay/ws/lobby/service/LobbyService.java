@@ -20,13 +20,17 @@ public interface LobbyService {
 
     List<Lobby> findAll();
     @NewSpan
-    void startVoting(@SpanTag("lobbyId") Long lobbyId);
+    void startOrCancelLobby(@SpanTag("lobbyId") Long lobbyId);
     @NewSpan
-    void updateMemberStatus(@SpanTag("lobbyId") Long lobbyId, @SpanTag("memberId") Long memberId);
-    @NewSpan
-    void voteRandomCard(@SpanTag("id") Long id, @SpanTag("lobbyMapStatus") LobbyMapStatus type);
-    @NewSpan
-    void voteCardByServer(@SpanTag("lobbyId") Long lobbyId, @SpanTag("cardId") Long cardId, @SpanTag("lobbyMapStatus") LobbyMapStatus type);
-    @NewSpan
-    void voteCardByUser(@SpanTag("lobbyId") Long lobbyId, @SpanTag("lobbyMap") LobbyMap map, @SpanTag("userId") Long userId);
+    void cancelVoting(@SpanTag("lobbyId") Long lobbyId);
+
+    void startVoting(Long lobbyId);
+
+    void updateMemberStatus(Long lobbyId, Long memberId);
+
+    void voteRandomCard(Long id, LobbyMapStatus type);
+
+    void voteCardByServer(Long lobbyId, Long cardId, LobbyMapStatus type);
+
+    void voteCardByUser(Long lobbyId, LobbyMap map, Long userId);
 }

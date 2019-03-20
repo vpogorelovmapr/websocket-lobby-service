@@ -1,0 +1,183 @@
+@startuml cooperations
+    title
+        Sequence Diagram for lobby service flow
+    end title
+    legend
+        <u>User</u>: WePlay user
+        <u>Tournament service</u>: Tournament service
+        <u>Gateway</u>: Websocket api gateway
+        <u>WSS</u>: Websocket streaming service
+        <u>Lobby service</u>: Websocket lobby service
+        <u>RabbitMQ</u>: Messaging broker
+        <u>Redis</u>: Redis key-value storage
+    end legend
+    participant "Browser" as b
+    participant "Tournament service" as tm
+    participant "Gateway" as g
+    participant "WSS" as wss
+    participant "Lobby service" as l
+    participant "RabbitMQ" as rmq
+    database "Redis" as r
+    ...
+    autonumber
+    tm -> tm: Lobby creation
+    tm -> rmq: Send lobby creation event
+    l <-- rmq: Receive lobby creation event
+    activate l
+    l -> l: Validate lobby event
+    l -> r: Persist lobby event
+    l -> rmq: Send lobby confirmation event to "tournament_events_<env>" queue
+
+    tm <-- rmq: Receive lobby confirmation event from "tournament_events_<env>" queue
+    activate tm
+    deactivate tm
+    l -> rmq: Send invitations to "private" queue
+         note right of l
+            ""{                                                         ""
+            ""	"data": {                                               ""
+            ""		"type": "Lobby",                                    ""
+            ""		"id": "{LOBBY_ID}",                                 ""
+            ""		"attributes": {                                     ""
+            ""			"status": "UPCOMING",                           ""
+            ""			"start_datetime": "{ISO_DATETIME}"              ""
+            ""		}                                                   ""
+            ""   }                                                      ""
+            ""}                                                         ""
+        end note
+
+    wss <-- rmq: Receive invitations from "private" queue
+    activate wss
+    wss --> b: Send invitation to users
+    deactivate wss
+    loop Wait 120 seconds till all members are connected to lobby
+        activate b
+        b -> wss: Send "MatchMember" events
+        note right of b
+                ""{                                                         ""
+                ""	"data": {                                               ""
+                ""		"type": "MatchMember",                              ""
+                ""		"id": {MEMBER_ID},                                  ""
+                ""		"attributes": {                                     ""
+                ""			"status": "ONLINE"                              ""
+                ""		},                                                  ""
+                ""		"relationships": {                                  ""
+                ""			"lobby": {                                      ""
+                ""				"data": {                                   ""
+                ""					"type": "Lobby",                        ""
+                ""					"id": {LOBBY_ID}                        ""
+                ""				}                                           ""
+                ""			}                                               ""
+                ""		}                                                   ""
+                ""	}                                                       ""
+                ""}                                                         ""
+            end note
+        deactivate b
+        activate wss
+        wss -> rmq: Send "MatchMember" event to "lobby_in_<env>" queue
+        deactivate wss
+        l <-- rmq: Receive 'MatchMember' event from "lobby_in_<env> queue"
+        l -> r: Update lobby entity with new online user
+    end
+    alt all members are present
+        l -> rmq: Send 'MatchStartedEvent' to "lobby_out_<env>" and "tournament_events_<env>"
+            note right of l
+                ""{                                                     ""
+                ""	"data": {                                           ""
+                ""		"type": "Lobby",                                ""
+                ""		"id": "{LOBBY_ID}",                             ""
+                ""		"attributes": {                                 ""
+                ""			"status": "ONGOING"                         ""
+                ""		}                                               ""
+                ""   }                                                  ""
+                ""}                                                     ""
+            end note
+        l -> l: Start voting
+    else
+        l -> rmq: Send 'MatchCanceledEvent' event to "lobby_out_<env>" and "tournament_events_<env>" queues
+        note right of l
+            ""{                                                         ""
+            ""	"data": {                                               ""
+            ""		"type": "Lobby",                                    ""
+            ""		"id": "{LOBBY_ID}",                                 ""
+            ""		"attributes": {                                     ""
+            ""			"status": "CANCELED"                            ""
+            ""		}                                                   ""
+            ""  }                                                       ""
+            ""}                                                         ""
+        end note
+    end
+
+    wss <-- rmq: Receive 'MatchStartedEvent' or 'MatchCanceledEvent' event from "lobby_out_<env>" queue
+        activate wss
+        wss --> b: Send 'MatchStartedEvent' or 'MatchCanceledEvent' event to users
+        activate b
+        deactivate wss
+        tm <-- rmq: Receive 'MatchStartedEvent' or 'MatchCanceledEvent' event from "tournament_events_<env>" queue
+        activate tm
+        deactivate tm
+
+    loop every 15 seconds till voting ends
+        b -> wss: Send VoteEvent event
+        note right of b
+            ""{                                                         ""
+            ""    "data": {                                             ""
+            ""        "type": "LobbyMap",                               ""
+            ""        "id": {LOBBY_MAP_ID},                             ""
+            ""        "relationships": {                                ""
+            ""            "map": {                                      ""
+            ""                "data": {                                 ""
+            ""                    "type": "VoteItem",                   ""
+            ""                    "id": {CARD_ID}                       ""
+            ""                }                                         ""
+            ""            },                                            ""
+            ""            "lobby": {                                    ""
+            ""                "data": {                                 ""
+            ""                    "type": "Lobby",                      ""
+            ""                    "id": {LOBBY_ID}                      ""
+            ""                }                                         ""
+            ""            }                                             ""
+            ""        }                                                 ""
+            ""    }                                                     ""
+            ""}                                                         ""
+            end note
+    activate wss
+    wss -> rmq: Send VoteEvent event to "lobby_in_<env>" queue
+    l <-- rmq: Receive 'VoteEvent' event from "lobby_in_<env>" queue
+    l -> l: Validate vote item
+    l -> r: Update lobby entity with new vote item
+    alt User skipped his turn to vote
+        l -> l: Choose random card id
+    end
+    l -> rmq: Sent 'VoteEvent' event to "lobby_out_<env>" and "tournament_events_<env>" queues
+    wss <-- rmq: Receive 'VoteEvent' event from "lobby_out_<env>" queue
+    wss --> b: Send 'VoteEvent' event to users via websockets
+        deactivate wss
+        tm <-- rmq: Receive VoteEvent event from "tournament_events_<env>" queue
+        activate tm
+        deactivate tm
+    end
+    l -> rmq: Send 'MatchEndedEvent' event to "lobby_out_<env>" and "tournament_events_<env>" queues
+        note right of l
+            ""{                                                         ""
+            ""	"data": {                                               ""
+            ""		"type": "Lobby",                                    ""
+            ""		"id": "{LOBBY_ID}",                                 ""
+            ""		"attributes": {                                     ""
+            ""			"status": "ENDED"                               ""
+            ""		}                                                   ""
+            ""  }                                                       ""
+            ""}                                                         ""
+        end note
+
+
+    wss <-- rmq: Receive 'MatchEndedEvent' event from "lobby_out_<env>" queue
+    activate wss
+    wss --> b: Send 'MatchEndedEvent' event to users via websockets
+    deactivate wss
+    tm <-- rmq: Receive 'MatchEndedEvent' event from "tournament_events_<env>" queue
+    activate tm
+    deactivate tm
+    deactivate b
+    deactivate l
+
+@enduml

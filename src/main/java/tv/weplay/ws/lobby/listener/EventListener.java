@@ -39,7 +39,7 @@ public class EventListener {
     }
 
     private void handleLobbyCreatedEvent(Event event) {
-        if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CREATED)) {
+        if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CREATE_REQUEST)) {
             Lobby lobby = converter.readObject(event.getEventData().toString(), Lobby.class);
             lobbyService.create(lobby);
         }
