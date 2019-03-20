@@ -10,7 +10,7 @@ spring:
         default-requeue-rejected: false
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://localhost:13306/lobby_test
+    url: jdbc:mysql://localhost:13306/lobby_test?&autoReconnect=true&failOverReadOnly=false&maxReconnects=10
     username: user
     password: pass
   jpa:
