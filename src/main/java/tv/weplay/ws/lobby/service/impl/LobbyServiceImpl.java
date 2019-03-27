@@ -128,6 +128,7 @@ public class LobbyServiceImpl implements LobbyService {
         Lobby lobby = findById(lobbyId);
         if (Objects.isNull(lobby)) {
             log.error("Lobby [{}] doesn't exist", lobbyId);
+            return;
         }
         if (lobby.getStatus().equals(LobbyStatus.UPCOMING)) {
             log.info("Removing job {}", LOBBY_PREFIX + lobbyId);
