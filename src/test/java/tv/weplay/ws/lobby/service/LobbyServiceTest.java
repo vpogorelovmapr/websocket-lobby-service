@@ -62,7 +62,7 @@ public class LobbyServiceTest extends AbstractEnd2EndTestBase {
         lobby.getMatch().getMembers().forEach(member -> member.setStatus(MemberStatus.ONLINE));
         lobbyService.create(lobby);
 
-        lobbyService.startVoting(lobby.getId());
+        lobbyService.start(lobby.getId());
 
         Lobby actual = lobbyService.findById(lobby.getId());
 

@@ -94,14 +94,14 @@ public class LobbyServiceImpl implements LobbyService {
     @Override
     public void startOrCancelLobby(Long lobbyId) {
         if (allMatchMemberPresent(lobbyId)) {
-            startVoting(lobbyId);
+            start(lobbyId);
         } else {
-            cancelVoting(lobbyId);
+            cancel(lobbyId);
         }
     }
 
     @Override
-    public void startVoting(Long lobbyId) {
+    public void start(Long lobbyId) {
         log.info("Start voting. Lobby id: {} ", lobbyId);
         Lobby lobby = findById(lobbyId);
         lobby.setStatus(LobbyStatus.ONGOING);
@@ -123,9 +123,21 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     @Override
-    public void cancelVoting(Long lobbyId) {
+    public void cancel(Long lobbyId) {
         log.info("Switching to cancel lobby sate. Lobby id: {} ", lobbyId);
         Lobby lobby = findById(lobbyId);
+        if (Objects.isNull(lobby)) {
+            log.error("Lobby [{}] doesn't exist", lobbyId);
+            return;
+        }
+        if (lobby.getStatus().equals(LobbyStatus.UPCOMING)) {
+            log.info("Removing job {}", LOBBY_PREFIX + lobbyId);
+            schedulerService.unschedule(LOBBY_PREFIX + lobbyId, MATCH_START_GROUP);
+        }
+        if (lobby.getStatus().equals(LobbyStatus.ONGOING)) {
+            log.info("Removing job {}", VOTE_PREFIX + lobbyId);
+            schedulerService.unschedule(VOTE_PREFIX + lobbyId, VOTE_GROUP);
+        }
         lobby.setStatus(LobbyStatus.CANCELED);
         update(lobby);
 
@@ -307,7 +319,7 @@ public class LobbyServiceImpl implements LobbyService {
     private void scheduleLobbyStartJob(Lobby lobby) {
         JobDataMap dataMap = new JobDataMap();
         dataMap.put(LOBBY_ID, lobby.getId());
-        schedulerService.schedule(UUID.randomUUID().toString(), MATCH_START_GROUP,
+        schedulerService.schedule(LOBBY_PREFIX + lobby.getId(), MATCH_START_GROUP,
                 ZonedDateTime.now().plusSeconds(lobby.getDuration()), dataMap, MatchStartJob.class);
     }
 

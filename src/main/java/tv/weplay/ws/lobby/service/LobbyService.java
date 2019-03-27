@@ -22,9 +22,9 @@ public interface LobbyService {
     @NewSpan
     void startOrCancelLobby(@SpanTag("lobbyId") Long lobbyId);
     @NewSpan
-    void cancelVoting(@SpanTag("lobbyId") Long lobbyId);
+    void cancel(@SpanTag("lobbyId") Long lobbyId);
     @NewSpan
-    void startVoting(@SpanTag("lobbyId") Long lobbyId);
+    void start(@SpanTag("lobbyId") Long lobbyId);
     @NewSpan
     void updateMemberStatus(@SpanTag("lobbyId") Long lobbyId, @SpanTag("memberId") Long memberId);
     @NewSpan

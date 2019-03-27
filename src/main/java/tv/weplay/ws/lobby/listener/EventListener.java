@@ -42,6 +42,9 @@ public class EventListener {
         if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CREATE_REQUEST)) {
             Lobby lobby = converter.readObject(event.getEventData().toString(), Lobby.class);
             lobbyService.create(lobby);
+        } else if (event.getEventMetaData().getType().equals(EventTypes.LOBBY_CANCELED)) {
+            Lobby lobby = converter.readObject(event.getEventData().toString(), Lobby.class);
+            lobbyService.cancel(lobby.getId());
         }
     }
 

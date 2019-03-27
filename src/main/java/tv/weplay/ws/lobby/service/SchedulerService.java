@@ -17,4 +17,5 @@ public interface SchedulerService {
     @NewSpan
     void unschedule(@SpanTag("identity") String identity, @SpanTag("group") String group);
 
+    void clear();
 }

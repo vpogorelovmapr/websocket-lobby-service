@@ -17,6 +17,7 @@ public class SchedulerServiceImpl implements SchedulerService {
     public static final String MATCH_START_GROUP = "match-start-group";
     public static final String VOTE_GROUP = "vote-group";
     public static final String VOTE_PREFIX = "vote_";
+    public static final String LOBBY_PREFIX = "lobby_";
 
     private final Scheduler scheduler;
 
@@ -38,6 +39,12 @@ public class SchedulerServiceImpl implements SchedulerService {
     public void unschedule(String identity, String group) {
         scheduler.deleteJob(new JobKey(identity, group));
         scheduler.unscheduleJob(new TriggerKey(identity, group));
+    }
+
+    @Override
+    @SneakyThrows
+    public void clear() {
+        scheduler.clear();
     }
 
     private Trigger buildJobTrigger(JobDetail jobDetail, ZonedDateTime startAt, Integer interval) {
