@@ -126,12 +126,9 @@ public class LobbyServiceImpl implements LobbyService {
     public void cancel(Long lobbyId) {
         log.info("Switching to cancel lobby sate. Lobby id: {} ", lobbyId);
         Lobby lobby = findById(lobbyId);
-        lobby.setStatus(LobbyStatus.CANCELED);
-        update(lobby);
-
-        Lobby event = buildChangeLobbyStatusEvent(lobby);
-        publishEventToRMQ(event, lobby.getId().toString(), EventTypes.LOBBY_CANCELED);
-
+        if (Objects.isNull(lobby)) {
+            log.error("Lobby [{}] doesn't exist", lobbyId);
+        }
         if (lobby.getStatus().equals(LobbyStatus.UPCOMING)) {
             log.info("Removing job {}", LOBBY_PREFIX + lobbyId);
             schedulerService.unschedule(LOBBY_PREFIX + lobbyId, MATCH_START_GROUP);
@@ -140,6 +137,12 @@ public class LobbyServiceImpl implements LobbyService {
             log.info("Removing job {}", VOTE_PREFIX + lobbyId);
             schedulerService.unschedule(VOTE_PREFIX + lobbyId, VOTE_GROUP);
         }
+        lobby.setStatus(LobbyStatus.CANCELED);
+        update(lobby);
+
+        Lobby event = buildChangeLobbyStatusEvent(lobby);
+        publishEventToRMQ(event, lobby.getId().toString(), EventTypes.LOBBY_CANCELED);
+
         String userInformation = getUsersInformation(lobby);
         log.info("Lobby[{}] state was canceled. USer information: {}", userInformation);
         sendErrorNotification(lobby.getId(), ErrorType.LOBBY_CANCELED, Optional.of(userInformation));
