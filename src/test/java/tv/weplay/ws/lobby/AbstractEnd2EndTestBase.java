@@ -9,11 +9,15 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import tv.weplay.ws.lobby.config.properties.RabbitmqProperties;
 import tv.weplay.ws.lobby.service.LobbyService;
+import tv.weplay.ws.lobby.service.SchedulerService;
 
 @ActiveProfiles("test")
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringBootTest
 public class AbstractEnd2EndTestBase {
+
+    @Autowired
+    private SchedulerService schedulerService;
 
     @Autowired
     protected RabbitmqProperties rabbitmqProperties;
@@ -29,6 +33,7 @@ public class AbstractEnd2EndTestBase {
         lobbyService.deleteAll();
         admin.purgeQueue(rabbitmqProperties.getOutcomingUiQueueName(), true);
         admin.purgeQueue(rabbitmqProperties.getOutcomingTournamentsQueueName(), true);
+        schedulerService.clear();
     }
 
 }
