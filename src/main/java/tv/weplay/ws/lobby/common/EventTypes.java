@@ -8,6 +8,6 @@ public class EventTypes {
     public static final String LOBBY_ENDED = "MatchEndedEvent";
     public static final String MEMBER = "MemberEvent";
     public static final String VOTE = "VoteEvent";
-    public static final String LOBBY_CREATE_REQUEST = "create lobby";
-    public static final String ERROR = "Error";
+    public static final String LOBBY_CREATE_REQUEST = "CreateLobbyEvent";
+    public static final String ERROR = "ErrorEvent";
 }
