@@ -95,7 +95,7 @@ public class LobbyServiceImpl implements LobbyService {
         if (allMatchMemberPresent(lobbyId)) {
             start(lobbyId);
         } else {
-            cancel(lobbyId);
+            cancel(lobbyId, true);
         }
     }
 
@@ -122,26 +122,22 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     @Override
-    public void cancel(Long lobbyId) {
+    public void cancel(Long lobbyId, boolean shouldNotifyTM) {
         log.info("Switching to cancel lobby sate. Lobby id: {} ", lobbyId);
         Lobby lobby = findById(lobbyId);
         if (Objects.isNull(lobby)) {
             log.error("Lobby [{}] doesn't exist", lobbyId);
             return;
         }
-        if (lobby.getStatus().equals(LobbyStatus.UPCOMING)) {
-            log.info("Removing job {}", LOBBY_PREFIX + lobbyId);
-            schedulerService.unschedule(LOBBY_PREFIX + lobbyId, MATCH_START_GROUP);
-        }
-        if (lobby.getStatus().equals(LobbyStatus.ONGOING)) {
-            log.info("Removing job {}", VOTE_PREFIX + lobbyId);
-            schedulerService.unschedule(VOTE_PREFIX + lobbyId, VOTE_GROUP);
-        }
         lobby.setStatus(LobbyStatus.CANCELED);
         update(lobby);
 
         Lobby event = buildChangeLobbyStatusEvent(lobby);
-        publishEventToRMQ(event, lobby.getId().toString(), EventTypes.LOBBY_CANCELED);
+        if (shouldNotifyTM) {
+            publishEventToRMQ(event, lobby.getId().toString(), EventTypes.LOBBY_CANCELED);
+        } else {
+            publishEventToUI(event, lobby.getId().toString(), EventTypes.LOBBY_CANCELED);
+        }
 
         String userInformation = getUsersInformation(lobby);
         log.info("Lobby[{}] state was canceled. USer information: {}", userInformation);
@@ -254,6 +250,14 @@ public class LobbyServiceImpl implements LobbyService {
         eventSenderService.prepareAndSendEvent(DEFAULT_EXCHANGE, data,
                 rmqProperties.getOutcomingTournamentsQueueName(),
                 EventTypes.LOBBY_CREATED);
+    }
+
+    @SneakyThrows
+    private void publishEventToUI(Object event, String routingKey, String type) {
+        byte[] data = converter.writeObject(event);
+        log.info("Publishing event to rabbitMQ [{}]", new String(data));
+        eventSenderService.prepareAndSendEvent(rmqProperties.getOutcomingUiQueueName(), data,
+                routingKey, type);
     }
 
     @SneakyThrows
