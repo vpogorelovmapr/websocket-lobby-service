@@ -33,7 +33,7 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
     @Test
     public void cancelOneToOneLobby() throws Exception {
         // Send lobby creation event
-        sendLobbyCreationEvent(5L);
+        sendLobbyCreationEvent();
 
         // Check that lobby service receive lobby creation event
         checkLobbyStatusEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
@@ -47,42 +47,15 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
     @Test
     public void playOneToOneLobby() throws Exception {
         // Send lobby creation event
-        sendLobbyCreationEvent(5L);
+        sendLobbyCreationEvent();
 
         // Check that lobby service receive lobby creation event
         checkLobbyStatusEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
         checkLobbyStatusEvent(rabbitmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
 
         // Send match member event that user is online
-        sendAndCheckMemberEvent(DEFAULT_ID, MemberStatus.ONLINE);
-        sendAndCheckMemberEvent(DEFAULT_ID + 1, MemberStatus.ONLINE);
-
-        // Check that lobby service sent ongoing event as all users are online
-        receiveAndCheckLobbyEvent(LobbyStatus.ONGOING);
-
-        // Send vote event
-        sendLobbyMapEvent();
-
-        // Check lobby vote results from lobby service
-        receiveAndCheckLobbyMapEvent(DEFAULT_ID, 1L);
-        receiveAndCheckLobbyMapEvent(DEFAULT_ID + 1, 2L);
-
-        // Check that lobby service sent ended event
-        receiveAndCheckLobbyEvent(LobbyStatus.ENDED);
-    }
-
-    @Test(timeout = 5000)
-    public void startLobbyWithCaptainsReady() throws Exception {
-        // Send lobby creation event
-        sendLobbyCreationEvent(120L);
-
-        // Check that lobby service receive lobby creation event
-        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
-        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
-
-        // Send match member event that user is ready
-        sendAndCheckMemberEvent(DEFAULT_ID, MemberStatus.READY);
-        sendAndCheckMemberEvent(DEFAULT_ID + 1, MemberStatus.READY);
+        sendAndCheckMemberEvent(DEFAULT_ID);
+        sendAndCheckMemberEvent(DEFAULT_ID + 1);
 
         // Check that lobby service sent ongoing event as all users are online
         receiveAndCheckLobbyEvent(LobbyStatus.ONGOING);
@@ -129,10 +102,9 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
         checkLobbyStatusEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), status);
     }
 
-    private void sendAndCheckMemberEvent(Long memberId, MemberStatus status) throws DocumentSerializationException {
+    private void sendAndCheckMemberEvent(Long memberId) throws DocumentSerializationException {
         MatchMember member = MatchMember.builder()
                 .lobby(Lobby.builder().id(DEFAULT_ID).build())
-                .status(status)
                 .id(memberId)
                 .build();
 
@@ -164,18 +136,18 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
         return ImmutableMap.of("user_id", defaultId);
     }
 
-    private void sendLobbyCreationEvent(Long duration) throws DocumentSerializationException {
-        Lobby lobby = getLobby(duration);
+    private void sendLobbyCreationEvent() throws DocumentSerializationException {
+        Lobby lobby = getLobby();
         String message = new String(converter.writeDocument(new JSONAPIDocument<>(lobby)));
         eventSenderService.prepareAndSendEvent("", message, rabbitmqProperties.getIncomingTournamentsQueueName(),
                 LOBBY_CREATE_REQUEST, new HashMap<>());
     }
 
-    private Lobby getLobby(Long duration) {
+    private Lobby getLobby() {
         return Lobby.builder()
                 .id(RabbitMQEventsTest.DEFAULT_ID)
                 .status(UPCOMING)
-                .duration(duration)
+                .duration(5L)
                 .settings(Settings.builder()
                         .votePool(Arrays.asList(1L, 2L))
                         .voteTime(15)

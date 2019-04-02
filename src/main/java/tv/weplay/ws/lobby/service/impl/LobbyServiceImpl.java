@@ -147,8 +147,8 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     @Override
-    public void updateMemberStatus(Long lobbyId, MatchMember memberUpdate) {
-        log.info("Updating member with id {} for lobby {}", memberUpdate.getId(), lobbyId);
+    public void updateMemberStatus(Long lobbyId, Long memberId) {
+        log.info("Updating member with id {} for lobby {}", memberId, lobbyId);
         Lobby lobby = findById(lobbyId);
         log.info("Lobby found: {}", lobby);
         if (Objects.isNull(lobby)) {
@@ -156,19 +156,14 @@ public class LobbyServiceImpl implements LobbyService {
             return;
         }
         Optional<MatchMember> matchMember = lobby.getMatch().getMembers().stream()
-                .filter(member -> member.getId().equals(memberUpdate.getId()))
+                .filter(member -> member.getId().equals(memberId))
                 .findAny();
         matchMember.ifPresent(member -> {
-            member.setStatus(memberUpdate.getStatus());
+            member.setStatus(MemberStatus.ONLINE);
             update(lobby);
-
             MatchMember event = buildMatchMemberEvent(member, lobbyId);
             publishEventToRMQ(event, lobby.getId().toString(), EventTypes.MEMBER);
         });
-
-        if (lobby.getStatus().equals(LobbyStatus.UPCOMING)) {
-            startLobbyIfAllCaptainsReady(lobby);
-        }
     }
 
     @Override
@@ -428,19 +423,6 @@ public class LobbyServiceImpl implements LobbyService {
             return false;
         }
         return true;
-    }
-
-    private void startLobbyIfAllCaptainsReady(Lobby lobby) {
-        boolean allCaptainsReady = lobby.getMatch().getMembers().stream()
-                .filter(member -> member.getTournamentMember().getRole().equals(CAPTAIN))
-                .map(MatchMember::getStatus)
-                .allMatch(status -> status.equals(MemberStatus.READY));
-        boolean allMembersPresent = allMatchMemberPresent(lobby.getId());
-        if (allCaptainsReady && allMembersPresent) {
-            log.info("All captains are ready and all members are present. Start voting.");
-            schedulerService.unschedule(LOBBY_PREFIX + lobby.getId(), MATCH_START_GROUP);
-            start(lobby.getId());
-        }
     }
 
     private String getUsersInformation(Lobby lobby) {

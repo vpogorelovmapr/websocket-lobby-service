@@ -26,7 +26,7 @@ public interface LobbyService {
     @NewSpan
     void start(@SpanTag("lobbyId") Long lobbyId);
     @NewSpan
-    void updateMemberStatus(@SpanTag("lobbyId") Long lobbyId, @SpanTag("member") MatchMember member);
+    void updateMemberStatus(@SpanTag("lobbyId") Long lobbyId, @SpanTag("memberId") Long memberId);
     @NewSpan
     void voteRandomCard(@SpanTag("id") Long id, @SpanTag("lobbyMapStatus") LobbyMapStatus type);
     @NewSpan

@@ -76,12 +76,7 @@ public class LobbyServiceTest extends AbstractEnd2EndTestBase {
         Lobby lobby = getLobby(DEFAULT_ID);
         lobbyService.create(lobby);
 
-        MatchMember matchMember = MatchMember.builder()
-                .id(DEFAULT_ID)
-                .status(MemberStatus.ONLINE)
-                .build();
-
-        lobbyService.updateMemberStatus(lobby.getId(), matchMember);
+        lobbyService.updateMemberStatus(lobby.getId(), DEFAULT_ID);
 
         Lobby actual = lobbyService.findById(lobby.getId());
 
@@ -125,11 +120,11 @@ public class LobbyServiceTest extends AbstractEnd2EndTestBase {
     @Test
     public void voteCardByServer() {
         Lobby lobby = getLobby(DEFAULT_ID);
-        lobbyService.create(lobby);
+        Lobby actual = lobbyService.create(lobby);
 
         lobbyService.voteCardByServer(lobby.getId(), 1L, LobbyMapStatus.SERVER_PICK);
 
-        Lobby actual = lobbyService.findById(lobby.getId());
+        actual = lobbyService.findById(lobby.getId());
 
         assertThat(actual).isNotNull();
         assertThat(actual.getId()).isEqualTo(lobby.getId());
