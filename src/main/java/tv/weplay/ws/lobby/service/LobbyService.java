@@ -22,7 +22,7 @@ public interface LobbyService {
     @NewSpan
     void startOrCancelLobby(@SpanTag("lobbyId") Long lobbyId);
     @NewSpan
-    void cancel(@SpanTag("lobbyId") Long lobbyId);
+    void cancel(@SpanTag("lobbyId") Long lobbyId, boolean shouldNotifyTM);
     @NewSpan
     void start(@SpanTag("lobbyId") Long lobbyId);
     @NewSpan

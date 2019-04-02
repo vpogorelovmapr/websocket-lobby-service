@@ -19,8 +19,6 @@ import tv.weplay.ws.lobby.service.EventSenderService;
 @RequiredArgsConstructor
 public class RabbitMQEventSenderService implements EventSenderService {
 
-    public static final String DEFAULT_EXCHANGE = "";
-
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
 
@@ -37,7 +35,7 @@ public class RabbitMQEventSenderService implements EventSenderService {
     public void prepareAndSendEvent(String exchange, String data, String routeKey, String type,
             Map<String, ?> headers) {
         String payload = buildRabbitMQEvent(data, type);
-        log.info("Event to be sent: [{}]", payload);
+        log.info("Event to be sent: [{}]. RouteKey: {}", payload, routeKey);
         rabbitTemplate.convertAndSend(exchange, routeKey, payload,
                 message -> setHeaders(headers, message));
         log.info("Message that has been successfully sent: [{}]", payload);
