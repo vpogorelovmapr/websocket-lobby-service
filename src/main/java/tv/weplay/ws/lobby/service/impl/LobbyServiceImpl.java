@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import tv.weplay.ws.lobby.common.EventTypes;
 import tv.weplay.ws.lobby.config.properties.RabbitmqProperties;
 import tv.weplay.ws.lobby.converter.JsonApiConverter;
+import tv.weplay.ws.lobby.exception.LobbyAlreadyExist;
 import tv.weplay.ws.lobby.mapper.LobbyMapper;
 import tv.weplay.ws.lobby.model.dto.*;
 import tv.weplay.ws.lobby.model.entity.LobbyEntity;
@@ -44,6 +45,11 @@ public class LobbyServiceImpl implements LobbyService {
 
     @Override
     public Lobby create(Lobby lobby) {
+        Optional<LobbyEntity> existing = lobbyRepository.findById(lobby.getId());
+        if (existing.isPresent()) {
+            log.error("Lobby with id {} already exists", lobby.getId());
+            throw new LobbyAlreadyExist("Lobby already exists");
+        }
         LobbyEntity entity = lobbyMapper.toEntity(lobby);
         entity.setLobbyStartDatetime(LocalDateTime.now());
         LobbyEntity createdEntity = lobbyRepository.save(entity);
