@@ -17,6 +17,7 @@ import static tv.weplay.ws.lobby.common.EventTypes.LOBBY_CREATE_REQUEST;
 import static tv.weplay.ws.lobby.common.EventTypes.MEMBER;
 import static tv.weplay.ws.lobby.common.EventTypes.VOTE;
 import static tv.weplay.ws.lobby.model.dto.LobbyStatus.CANCELED;
+import static tv.weplay.ws.lobby.model.dto.LobbyStatus.NOT_STARTED;
 import static tv.weplay.ws.lobby.model.dto.LobbyStatus.UPCOMING;
 
 @Slf4j
@@ -174,7 +175,7 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
     private Lobby getLobby(Long duration) {
         return Lobby.builder()
                 .id(RabbitMQEventsTest.DEFAULT_ID)
-                .status(UPCOMING)
+                .status(NOT_STARTED)
                 .duration(duration)
                 .settings(Settings.builder()
                         .votePool(Arrays.asList(1L, 2L))

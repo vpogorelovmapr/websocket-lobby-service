@@ -151,7 +151,7 @@ public class LobbyServiceTest extends AbstractEnd2EndTestBase {
     private Lobby getLobby(Long lobbyId) {
         return Lobby.builder()
                 .id(lobbyId)
-                .status(LobbyStatus.UPCOMING)
+                .status(LobbyStatus.NOT_STARTED)
                 .duration(5L)
                 .settings(Settings.builder()
                         .votePool(Arrays.asList(1L, 2L, 3L))

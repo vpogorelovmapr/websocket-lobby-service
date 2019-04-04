@@ -52,6 +52,7 @@ public class LobbyServiceImpl implements LobbyService {
         }
         LobbyEntity entity = lobbyMapper.toEntity(lobby);
         entity.setLobbyStartDatetime(LocalDateTime.now());
+        entity.setStatus(LobbyStatus.UPCOMING);
         LobbyEntity createdEntity = lobbyRepository.save(entity);
         Lobby created = lobbyMapper.toDTO(createdEntity);
         log.info("Created lobby {}", created);
