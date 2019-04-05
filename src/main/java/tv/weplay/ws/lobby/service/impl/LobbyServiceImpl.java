@@ -141,7 +141,13 @@ public class LobbyServiceImpl implements LobbyService {
 
         Lobby event = buildChangeLobbyStatusEvent(lobby);
         if (shouldNotifyTM) {
-            publishEventToRMQ(event, lobby.getId().toString(), EventTypes.LOBBY_CANCELED);
+            //TODO: use exchanges instead of direct queue names
+            byte[] data = converter.writeObject(event);
+            log.info("Publishing event to rabbitMQ [{}]", new String(data));
+            eventSenderService.prepareAndSendEvent(rmqProperties.getOutcomingUiQueueName(), data,
+                    lobbyId.toString(), EventTypes.LOBBY_CANCELED);
+            eventSenderService.prepareAndSendEvent(DEFAULT_EXCHANGE, data,
+                    rmqProperties.getTournamentsCancelQueueName(), EventTypes.LOBBY_CANCELED);
         } else {
             publishEventToUI(event, lobby.getId().toString(), EventTypes.LOBBY_CANCELED);
         }

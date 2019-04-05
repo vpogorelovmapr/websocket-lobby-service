@@ -41,7 +41,7 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
         checkLobbyStatusEvent(rabbitmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
 
         // Check that lobby service sent canceled event as some users are offline
-        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), CANCELED);
+        checkLobbyStatusEvent(rabbitmqProperties.getTournamentsCancelQueueName(), CANCELED);
         checkLobbyStatusEvent(rabbitmqProperties.getOutcomingUiQueueName(), CANCELED);
     }
 
