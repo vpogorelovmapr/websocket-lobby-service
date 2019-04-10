@@ -480,7 +480,7 @@ public class LobbyServiceImpl implements LobbyService {
             throwInvalidMatchMemberEvent(lobby, message);
         }
         TournamentMember tm = matchMember.getTournamentMember();
-        if (!tm.getRole().equals(TournamentMemberRole.CAPTAIN)) {
+        if (!tm.getRole().equals(TournamentMemberRole.CAPTAIN) && statusUpdate.equals(MemberStatus.READY)) {
             String message = String.format("User %s is not captain", matchMember.getId());
             throwInvalidMatchMemberEvent(lobby, message);
         }
@@ -491,7 +491,7 @@ public class LobbyServiceImpl implements LobbyService {
         }
         if (statusUpdate.equals(matchMember.getStatus())) {
             String message = String.format("User is already in %s state", memberUpdate.getStatus());
-            throwInvalidMatchMemberEvent(lobby, message);
+            throw new InvalidMatchMemberStatusException(message);
         }
     }
 
