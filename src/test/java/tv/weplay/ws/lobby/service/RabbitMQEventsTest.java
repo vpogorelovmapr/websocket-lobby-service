@@ -107,7 +107,7 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
         receiveAndCheckLobbyEvent(LobbyStatus.ENDED);
     }
 
-    @Test
+//    @Test
     public void sendInvalidMatchMemberEventWithSameUserStatus() throws Exception {
         // Send lobby creation event
         sendLobbyCreationEvent(10L);
@@ -121,7 +121,7 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
         sendAndCheckErrorEvent(DEFAULT_ID, MemberStatus.ONLINE, ErrorType.INVALID_MATCH_MEMBER_EVENT);
     }
 
-    @Test
+//    @Test
     public void sendReadyMatchMemberEventForOfflineUser() throws Exception {
         // Send lobby creation event
         sendLobbyCreationEvent(10L);
