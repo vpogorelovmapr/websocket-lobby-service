@@ -9,8 +9,10 @@ import org.testcontainers.shaded.com.google.common.collect.ImmutableMap;
 import tv.weplay.ws.lobby.AbstractEnd2EndTestBase;
 import tv.weplay.ws.lobby.converter.JsonApiConverter;
 import tv.weplay.ws.lobby.model.dto.*;
+import tv.weplay.ws.lobby.model.error.*;
 
 import java.util.*;
+import tv.weplay.ws.lobby.model.error.Error;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static tv.weplay.ws.lobby.common.EventTypes.LOBBY_CREATE_REQUEST;
@@ -30,6 +32,8 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
     private EventSenderService eventSenderService;
     @Autowired
     private JsonApiConverter converter;
+    @Autowired
+    private Map<ErrorType, ErrorTypeMapping> errorCodeMappings;
 
     @Test
     public void cancelOneToOneLobby() throws Exception {
@@ -81,6 +85,10 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
         checkLobbyStatusEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
         checkLobbyStatusEvent(rabbitmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
 
+        // Send match member event that user is online
+        sendAndCheckMemberEvent(DEFAULT_ID, MemberStatus.ONLINE);
+        sendAndCheckMemberEvent(DEFAULT_ID + 1, MemberStatus.ONLINE);
+
         // Send match member event that user is ready
         sendAndCheckMemberEvent(DEFAULT_ID, MemberStatus.READY);
         sendAndCheckMemberEvent(DEFAULT_ID + 1, MemberStatus.READY);
@@ -97,6 +105,32 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
 
         // Check that lobby service sent ended event
         receiveAndCheckLobbyEvent(LobbyStatus.ENDED);
+    }
+
+    @Test
+    public void sendInvalidMatchMemberEventWithSameUserStatus() throws Exception {
+        // Send lobby creation event
+        sendLobbyCreationEvent(10L);
+
+        // Check that lobby service receive lobby creation event
+        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
+        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
+
+        // Send match member event that user is online
+        sendAndCheckMemberEvent(DEFAULT_ID, MemberStatus.ONLINE);
+        sendAndCheckErrorEvent(DEFAULT_ID, MemberStatus.ONLINE, ErrorType.INVALID_MATCH_MEMBER_EVENT);
+    }
+
+    @Test
+    public void sendReadyMatchMemberEventForOfflineUser() throws Exception {
+        // Send lobby creation event
+        sendLobbyCreationEvent(10L);
+
+        // Check that lobby service receive lobby creation event
+        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
+        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
+
+        sendAndCheckErrorEvent(DEFAULT_ID, MemberStatus.READY, ErrorType.INVALID_MATCH_MEMBER_EVENT);
     }
 
     private void receiveAndCheckLobbyMapEvent(Long mapId, Long voteId) {
@@ -131,6 +165,20 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
     }
 
     private void sendAndCheckMemberEvent(Long memberId, MemberStatus status) throws DocumentSerializationException {
+        sendMatchMemberEvent(memberId, status);
+
+        checkMatchMemberEvent(rabbitmqProperties.getOutcomingUiQueueName(), memberId);
+        checkMatchMemberEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), memberId);
+    }
+
+    private void sendAndCheckErrorEvent(Long memberId, MemberStatus status, ErrorType type) throws DocumentSerializationException {
+        sendMatchMemberEvent(memberId, status);
+
+        checkErrorEvent(rabbitmqProperties.getOutcomingUiQueueName(), type);
+    }
+
+    private void sendMatchMemberEvent(Long memberId, MemberStatus status)
+            throws DocumentSerializationException {
         MatchMember member = MatchMember.builder()
                 .lobby(Lobby.builder().id(DEFAULT_ID).build())
                 .status(status)
@@ -140,9 +188,16 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
         String message = new String(converter.writeDocument(new JSONAPIDocument<>(member)));
         eventSenderService.prepareAndSendEvent("", message, rabbitmqProperties.getIncomingUiQueueName(),
                 MEMBER, getDefaultHeaders(memberId));
+    }
 
-        checkMatchMemberEvent(rabbitmqProperties.getOutcomingUiQueueName(), memberId);
-        checkMatchMemberEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), memberId);
+    private void checkErrorEvent(String queue, ErrorType type) {
+        String response = eventSenderService.receiveAndConvert(queue, DEFAULT_TIMEOUT);
+        Error error = converter.readObject(response, Error.class);
+        ErrorTypeMapping errorMapping = errorCodeMappings.get(type);
+
+        assertThat(error).isNotNull();
+        assertThat(error.getId()).isEqualTo(errorMapping.getId());
+        assertThat(error.getDescription()).isEqualTo(errorMapping.getDescription());
     }
 
     private void checkMatchMemberEvent(String queue, Long memberId) {

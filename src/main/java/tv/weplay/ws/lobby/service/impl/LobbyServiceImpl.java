@@ -5,6 +5,7 @@ import static java.util.stream.Collectors.groupingBy;
 import static tv.weplay.ws.lobby.model.dto.TournamentMemberRole.*;
 import static tv.weplay.ws.lobby.service.impl.SchedulerServiceImpl.*;
 
+import com.google.common.collect.ImmutableMap;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -12,12 +13,14 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.NotNull;
 import org.quartz.JobDataMap;
 import org.springframework.stereotype.Service;
 import tv.weplay.ws.lobby.common.EventTypes;
 import tv.weplay.ws.lobby.config.properties.RabbitmqProperties;
 import tv.weplay.ws.lobby.converter.JsonApiConverter;
-import tv.weplay.ws.lobby.exception.LobbyAlreadyExist;
+import tv.weplay.ws.lobby.exception.InvalidMatchMemberStatusException;
+import tv.weplay.ws.lobby.exception.LobbyAlreadyExistException;
 import tv.weplay.ws.lobby.mapper.LobbyMapper;
 import tv.weplay.ws.lobby.model.dto.*;
 import tv.weplay.ws.lobby.model.entity.LobbyEntity;
@@ -48,7 +51,7 @@ public class LobbyServiceImpl implements LobbyService {
         Optional<LobbyEntity> existing = lobbyRepository.findById(lobby.getId());
         if (existing.isPresent()) {
             log.error("Lobby with id {} already exists", lobby.getId());
-            throw new LobbyAlreadyExist("Lobby already exists");
+            throw new LobbyAlreadyExistException("Lobby already exists");
         }
         LobbyEntity entity = lobbyMapper.toEntity(lobby);
         entity.setLobbyStartDatetime(LocalDateTime.now());
@@ -168,6 +171,7 @@ public class LobbyServiceImpl implements LobbyService {
             sendErrorNotification(lobbyId, ErrorType.LOBBY_NOT_EXIST, Optional.empty());
             return;
         }
+        validateMatchMemberEvent(lobby, memberUpdate);
         Optional<MatchMember> matchMember = lobby.getMatch().getMembers().stream()
                 .filter(member -> member.getId().equals(memberUpdate.getId()))
                 .findAny();
@@ -338,15 +342,13 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     private void scheduleLobbyStartJob(Lobby lobby) {
-        JobDataMap dataMap = new JobDataMap();
-        dataMap.put(LOBBY_ID, lobby.getId());
+        JobDataMap dataMap = new JobDataMap(ImmutableMap.of(LOBBY_ID, lobby.getId()));
         schedulerService.schedule(LOBBY_PREFIX + lobby.getId(), MATCH_START_GROUP,
                 ZonedDateTime.now().plusSeconds(lobby.getDuration()), dataMap, MatchStartJob.class);
     }
 
     private void scheduleVoteJob(Long lobbyId, Integer interval) {
-        JobDataMap dataMap = new JobDataMap();
-        dataMap.put(LOBBY_ID, lobbyId);
+        JobDataMap dataMap = new JobDataMap(ImmutableMap.of(LOBBY_ID, lobbyId));
         schedulerService.schedule(VOTE_PREFIX + lobbyId, VOTE_GROUP,
                 ZonedDateTime.now().plusSeconds(interval), dataMap,
                 interval, VoteJob.class);
@@ -468,6 +470,41 @@ public class LobbyServiceImpl implements LobbyService {
             Optional<String> optionalInfo) {
         errorHandlerService.sendErrorMessage(rmqProperties.getOutcomingUiQueueName(),
                 lobbyId.toString(), errorType, optionalInfo);
+    }
+
+    private void validateMatchMemberEvent(Lobby lobby, MatchMember memberUpdate) {
+        MemberStatus statusUpdate = memberUpdate.getStatus();
+        MatchMember matchMember = getMatchMember(lobby, memberUpdate);
+        if (Objects.isNull(statusUpdate)) {
+            String message = "Match member status cannot be null";
+            throwInvalidMatchMemberEvent(lobby, message);
+        }
+        TournamentMember tm = matchMember.getTournamentMember();
+        if (!tm.getRole().equals(TournamentMemberRole.CAPTAIN)) {
+            String message = String.format("User %s is not captain", matchMember.getId());
+            throwInvalidMatchMemberEvent(lobby, message);
+        }
+        if (statusUpdate.equals(MemberStatus.READY) && !matchMember.getStatus().equals(MemberStatus.ONLINE)) {
+            String message = String.format("User %s cannot become ready. User is not online state",
+                    matchMember.getId());
+            throwInvalidMatchMemberEvent(lobby, message);
+        }
+        if (statusUpdate.equals(matchMember.getStatus())) {
+            String message = String.format("User is already in %s state", memberUpdate.getStatus());
+            throwInvalidMatchMemberEvent(lobby, message);
+        }
+    }
+
+    private void throwInvalidMatchMemberEvent(Lobby lobby, String message) {
+        sendErrorNotification(lobby.getId(), ErrorType.INVALID_MATCH_MEMBER_EVENT, Optional.ofNullable(message));
+        throw new InvalidMatchMemberStatusException(message);
+    }
+
+    @NotNull
+    private MatchMember getMatchMember(Lobby lobby, MatchMember memberUpdate) {
+        return lobby.getMatch().getMembers().stream()
+                .filter(member -> member.getId().equals(memberUpdate.getId()))
+                .findFirst().get();
     }
 
 }
