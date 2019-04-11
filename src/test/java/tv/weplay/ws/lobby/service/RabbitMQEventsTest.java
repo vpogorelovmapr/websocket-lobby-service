@@ -47,6 +47,8 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
         // Check that lobby service sent canceled event as some users are offline
         checkLobbyStatusEvent(rabbitmqProperties.getTournamentsCancelQueueName(), CANCELED);
         checkLobbyStatusEvent(rabbitmqProperties.getOutcomingUiQueueName(), CANCELED);
+
+        checkErrorEvent(rabbitmqProperties.getOutcomingUiQueueName(), ErrorType.LOBBY_CANCELED);
     }
 
     @Test
@@ -183,7 +185,6 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
 
         assertThat(error).isNotNull();
         assertThat(error.getId()).isEqualTo(errorMapping.getId());
-        assertThat(error.getDescription()).isEqualTo(errorMapping.getDescription());
     }
 
     private void checkMatchMemberEvent(String queue, Long memberId) {

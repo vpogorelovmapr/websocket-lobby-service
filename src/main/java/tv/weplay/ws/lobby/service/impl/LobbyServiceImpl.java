@@ -156,7 +156,7 @@ public class LobbyServiceImpl implements LobbyService {
         }
 
         String userInformation = getUsersInformation(lobby);
-        log.info("Lobby[{}] state was canceled. USer information: {}", userInformation);
+        log.info("Lobby[{}] state was canceled. User information: {}", userInformation);
         sendErrorNotification(lobby.getId(), ErrorType.LOBBY_CANCELED, Optional.of(userInformation));
         log.info("Lobby[{}] state before deletion: {}", lobby.getId(), lobby);
         delete(lobbyId);
