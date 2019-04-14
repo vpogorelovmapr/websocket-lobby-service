@@ -3,6 +3,7 @@ package tv.weplay.ws.lobby.model.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.jasminb.jsonapi.LongIdHandler;
 import com.github.jasminb.jsonapi.annotations.*;
+import java.time.LocalDateTime;
 import lombok.*;
 
 @Data
@@ -17,6 +18,9 @@ public class MatchMember {
     private Long id;
 
     private MemberStatus status;
+
+    @JsonProperty("start_vote_datetime")
+    private LocalDateTime startVoteDatetime;
 
     @JsonProperty("participation_type")
     private ParticipationType participationType;
