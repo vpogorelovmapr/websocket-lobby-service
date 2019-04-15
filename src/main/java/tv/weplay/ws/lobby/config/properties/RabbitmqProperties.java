@@ -11,6 +11,8 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "rabbitmq")
 public class RabbitmqProperties {
 
+    private String tournamentsCancelQueueName;
+
     private String incomingTournamentsQueueName;
 
     private String outcomingTournamentsQueueName;

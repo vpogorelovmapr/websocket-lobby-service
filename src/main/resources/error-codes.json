@@ -19,9 +19,9 @@
     "id": 5,
     "description": "Lobby doesn't exist. Probably it was canceled or ended"
   },
-  "ACTION_AFTER_LOBBY_ENDED": {
+  "INVALID_MATCH_MEMBER_EVENT": {
     "id": 6,
-    "description": "This action cannot be done. Lobby is already ended"
+    "description": "Invalid match member event"
   }
 
 }

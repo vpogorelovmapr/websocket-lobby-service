@@ -27,6 +27,11 @@ public class RabbitMQConfiguration {
     }
 
     @Bean
+    public Queue tournamentCancelQueue() {
+        return new Queue(rabbitmqProperties.getTournamentsCancelQueueName(), true, false, false, dlxArgs());
+    }
+
+    @Bean
     public Queue incomingUIQueue() {
         return new Queue(rabbitmqProperties.getIncomingUiQueueName(), true, false, false, dlxArgs());
     }

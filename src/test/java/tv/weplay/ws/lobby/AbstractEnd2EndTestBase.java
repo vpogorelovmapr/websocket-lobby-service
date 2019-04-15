@@ -33,6 +33,8 @@ public class AbstractEnd2EndTestBase {
         lobbyService.deleteAll();
         admin.purgeQueue(rabbitmqProperties.getOutcomingUiQueueName(), true);
         admin.purgeQueue(rabbitmqProperties.getOutcomingTournamentsQueueName(), true);
+        admin.purgeQueue(rabbitmqProperties.getOutcomingPrivateQueueName(), true);
+        admin.purgeQueue(rabbitmqProperties.getDeadLetterQueueName(), true);
         schedulerService.clear();
     }
 

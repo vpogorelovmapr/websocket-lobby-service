@@ -35,9 +35,7 @@ public class ErrorHandlerServiceImpl implements ErrorHandlerService {
         ErrorTypeMapping errorMapping = errorCodeMappings.get(type);
         return Error.builder()
                 .id(errorMapping.getId())
-                .description(optionalInfo.map(info ->
-                        String.format(errorMapping.getDescription(), info))
-                        .orElse(errorMapping.getDescription()))
+                .description(optionalInfo.orElse(errorMapping.getDescription()))
                 .dateTime(LocalDateTime.now())
                 .build();
     }
