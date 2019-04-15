@@ -177,11 +177,6 @@ public class LobbyServiceImpl implements LobbyService {
                 .findAny();
         matchMember.ifPresent(member -> {
             member.setStatus(memberUpdate.getStatus());
-            // UI team wants to have start_vote_datetime(in last ready event) once all captains are ready
-            if (allCaptainReady(lobby)) {
-                member.setStartVoteDatetime(LocalDateTime.now());
-            }
-
             update(lobby);
 
             MatchMember event = buildMatchMemberEvent(member, lobbyId);
@@ -311,7 +306,6 @@ public class LobbyServiceImpl implements LobbyService {
                 .id(member.getId())
                 .status(member.getStatus())
                 .lobby(Lobby.builder().id(lobbyId).build())
-                .startVoteDatetime(member.getStartVoteDatetime())
                 .build();
     }
 
@@ -452,20 +446,16 @@ public class LobbyServiceImpl implements LobbyService {
     }
 
     private void startLobbyIfAllCaptainsReady(Lobby lobby) {
-        boolean allCaptainsReady = allCaptainReady(lobby);
+        boolean allCaptainsReady = lobby.getMatch().getMembers().stream()
+                .filter(member -> member.getTournamentMember().getRole().equals(CAPTAIN))
+                .map(MatchMember::getStatus)
+                .allMatch(status -> status.equals(MemberStatus.READY));
         boolean allMembersPresent = allMatchMemberPresent(lobby.getId());
         if (allCaptainsReady && allMembersPresent) {
             log.info("All captains are ready and all members are present. Start voting.");
             schedulerService.unschedule(LOBBY_PREFIX + lobby.getId(), MATCH_START_GROUP);
             start(lobby.getId());
         }
-    }
-
-    private boolean allCaptainReady(Lobby lobby) {
-        return lobby.getMatch().getMembers().stream()
-                .filter(member -> member.getTournamentMember().getRole().equals(CAPTAIN))
-                .map(MatchMember::getStatus)
-                .allMatch(status -> status.equals(MemberStatus.READY));
     }
 
     private String getUsersInformation(Lobby lobby) {
