@@ -22,6 +22,9 @@ public class Lobby {
     @JsonProperty("start_datetime")
     private LocalDateTime startDatetime;
 
+    @JsonProperty("start_vote_datetime")
+    private LocalDateTime startVoteDatetime;
+
     private Long duration;
 
     private Settings settings;
