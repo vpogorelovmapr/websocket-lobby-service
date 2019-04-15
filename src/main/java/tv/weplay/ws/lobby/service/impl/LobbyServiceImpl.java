@@ -331,7 +331,6 @@ public class LobbyServiceImpl implements LobbyService {
         return Lobby.builder()
                 .id(lobby.getId())
                 .status(lobby.getStatus())
-                .startVoteDatetime(LocalDateTime.now())
                 .build();
     }
 
@@ -339,6 +338,7 @@ public class LobbyServiceImpl implements LobbyService {
         return Lobby.builder()
                 .id(lobby.getId())
                 .status(lobby.getStatus())
+                .startVoteDatetime(LocalDateTime.now())
                 .build();
     }
 
