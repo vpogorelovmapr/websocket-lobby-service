@@ -7,6 +7,6 @@ import lombok.*;
 @AllArgsConstructor
 public class ErrorTypeMapping {
 
-    private Long id;
+    private Long code;
     private String description;
 }

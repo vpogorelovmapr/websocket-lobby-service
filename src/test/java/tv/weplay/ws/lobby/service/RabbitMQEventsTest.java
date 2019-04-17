@@ -184,7 +184,7 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
         ErrorTypeMapping errorMapping = errorCodeMappings.get(type);
 
         assertThat(error).isNotNull();
-        assertThat(error.getId()).isEqualTo(errorMapping.getId());
+        assertThat(error.getCode()).isEqualTo(errorMapping.getCode());
     }
 
     private void checkMatchMemberEvent(String queue, Long memberId) {

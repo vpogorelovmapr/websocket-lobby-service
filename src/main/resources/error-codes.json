@@ -1,26 +1,26 @@
 {
   "LOBBY_CANCELED": {
-    "id": 1,
+    "code": 9001,
     "description": "Lobby was canceled. Additional info: %s"
   },
   "INVALID_LOBBY_MAP_ID": {
-    "id": 2,
+    "code": 9002,
     "description": "Invalid lobby map id"
   },
   "INVALID_USER_ID": {
-    "id": 3,
+    "code": 9003,
     "description": "Invalid user id. This user cannot vote now"
   },
   "INVALID_CARD_ID": {
-    "id": 4,
+    "code": 9004,
     "description": "Invalid card id. This card id cannot be picked/dropped"
   },
   "LOBBY_NOT_EXIST": {
-    "id": 5,
+    "code": 9005,
     "description": "Lobby doesn't exist. Probably it was canceled or ended"
   },
   "INVALID_MATCH_MEMBER_EVENT": {
-    "id": 6,
+    "code": 9006,
     "description": "Invalid match member event"
   }
 
