@@ -14,7 +14,7 @@ import lombok.*;
 public class Error {
 
     @Id(LongIdHandler.class)
-    private Long id;
+    private Long code;
     private String description;
     private LocalDateTime dateTime;
 }
