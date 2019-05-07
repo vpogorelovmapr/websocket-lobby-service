@@ -15,9 +15,7 @@ import java.util.*;
 import tv.weplay.ws.lobby.model.error.Error;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static tv.weplay.ws.lobby.common.EventTypes.LOBBY_CREATE_REQUEST;
-import static tv.weplay.ws.lobby.common.EventTypes.MEMBER;
-import static tv.weplay.ws.lobby.common.EventTypes.VOTE;
+import static tv.weplay.ws.lobby.common.EventTypes.*;
 import static tv.weplay.ws.lobby.model.dto.LobbyStatus.CANCELED;
 import static tv.weplay.ws.lobby.model.dto.LobbyStatus.NOT_STARTED;
 import static tv.weplay.ws.lobby.model.dto.LobbyStatus.UPCOMING;
@@ -38,27 +36,43 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
     @Test
     public void cancelOneToOneLobby() throws Exception {
         // Send lobby creation event
-        sendLobbyCreationEvent(5L);
+        sendLobbyEvent(5L, LOBBY_CREATE);
 
         // Check that lobby service receive lobby creation event
-        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
-        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
+        checkLobbyStatusEvent(rmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
+        checkLobbyStatusEvent(rmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
 
         // Check that lobby service sent canceled event as some users are offline
-        checkLobbyStatusEvent(rabbitmqProperties.getTournamentsCancelQueueName(), CANCELED);
-        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingUiQueueName(), CANCELED);
+        checkLobbyStatusEvent(rmqProperties.getTournamentsCancelQueueName(), CANCELED);
+        checkLobbyStatusEvent(rmqProperties.getOutcomingUiQueueName(), CANCELED);
 
-        checkErrorEvent(rabbitmqProperties.getOutcomingUiQueueName(), ErrorType.LOBBY_CANCELED);
+        checkErrorEvent(rmqProperties.getOutcomingUiQueueName(), ErrorType.LOBBY_CANCELED);
+    }
+
+    @Test
+    public void restartLobby() throws Exception {
+        // Send lobby creation event
+        sendLobbyEvent(120L, LOBBY_CREATE);
+
+        // Check that lobby service receive lobby creation event
+        checkLobbyStatusEvent(rmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
+        checkLobbyStatusEvent(rmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
+
+        sendLobbyEvent(120L, LOBBY_RESTART);
+
+        // Check that lobby service receive lobby restart event
+        checkLobbyStatusEvent(rmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
+        checkLobbyStatusEvent(rmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
     }
 
     @Test
     public void playOneToOneLobby() throws Exception {
         // Send lobby creation event
-        sendLobbyCreationEvent(5L);
+        sendLobbyEvent(5L, LOBBY_CREATE);
 
         // Check that lobby service receive lobby creation event
-        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
-        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
+        checkLobbyStatusEvent(rmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
+        checkLobbyStatusEvent(rmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
 
         // Send match member event that user is online
         sendAndCheckMemberEvent(DEFAULT_ID, MemberStatus.ONLINE);
@@ -81,11 +95,11 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
     @Test(timeout = 5000)
     public void startLobbyWithCaptainsReady() throws Exception {
         // Send lobby creation event
-        sendLobbyCreationEvent(120L);
+        sendLobbyEvent(120L, LOBBY_CREATE);
 
         // Check that lobby service receive lobby creation event
-        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
-        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
+        checkLobbyStatusEvent(rmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
+        checkLobbyStatusEvent(rmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
 
         // Send match member event that user is online
         sendAndCheckMemberEvent(DEFAULT_ID, MemberStatus.ONLINE);
@@ -112,18 +126,18 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
     @Test
     public void sendReadyMatchMemberEventForOfflineUser() throws Exception {
         // Send lobby creation event
-        sendLobbyCreationEvent(10L);
+        sendLobbyEvent(10L, LOBBY_CREATE);
 
         // Check that lobby service receive lobby creation event
-        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
-        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
+        checkLobbyStatusEvent(rmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
+        checkLobbyStatusEvent(rmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
 
         sendAndCheckErrorEvent(DEFAULT_ID, MemberStatus.READY, ErrorType.INVALID_MATCH_MEMBER_EVENT);
     }
 
     private void receiveAndCheckLobbyMapEvent(Long mapId, Long voteId) {
-        receiveAndCheckLobbyMapEvent(rabbitmqProperties.getOutcomingUiQueueName(), mapId, voteId);
-        receiveAndCheckLobbyMapEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), mapId, voteId);
+        receiveAndCheckLobbyMapEvent(rmqProperties.getOutcomingUiQueueName(), mapId, voteId);
+        receiveAndCheckLobbyMapEvent(rmqProperties.getOutcomingTournamentsQueueName(), mapId, voteId);
     }
 
     private void receiveAndCheckLobbyMapEvent(String queue, Long mapId, Long voteId) {
@@ -143,26 +157,26 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
                 .build();
 
         String message = new String(converter.writeDocument(new JSONAPIDocument<>(map)));
-        eventSenderService.prepareAndSendEvent("", message, rabbitmqProperties.getIncomingUiQueueName(),
+        eventSenderService.prepareAndSendEvent("", message, rmqProperties.getIncomingUiQueueName(),
                 VOTE, getDefaultHeaders(DEFAULT_ID));
     }
 
     private void receiveAndCheckLobbyEvent(LobbyStatus status) {
-        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingUiQueueName(), status);
-        checkLobbyStatusEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), status);
+        checkLobbyStatusEvent(rmqProperties.getOutcomingUiQueueName(), status);
+        checkLobbyStatusEvent(rmqProperties.getOutcomingTournamentsQueueName(), status);
     }
 
     private void sendAndCheckMemberEvent(Long memberId, MemberStatus status) throws DocumentSerializationException {
         sendMatchMemberEvent(memberId, status);
 
-        checkMatchMemberEvent(rabbitmqProperties.getOutcomingUiQueueName(), memberId);
-        checkMatchMemberEvent(rabbitmqProperties.getOutcomingTournamentsQueueName(), memberId);
+        checkMatchMemberEvent(rmqProperties.getOutcomingUiQueueName(), memberId);
+        checkMatchMemberEvent(rmqProperties.getOutcomingTournamentsQueueName(), memberId);
     }
 
     private void sendAndCheckErrorEvent(Long memberId, MemberStatus status, ErrorType type) throws DocumentSerializationException {
         sendMatchMemberEvent(memberId, status);
 
-        checkErrorEvent(rabbitmqProperties.getOutcomingUiQueueName(), type);
+        checkErrorEvent(rmqProperties.getOutcomingUiQueueName(), type);
     }
 
     private void sendMatchMemberEvent(Long memberId, MemberStatus status)
@@ -174,7 +188,7 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
                 .build();
 
         String message = new String(converter.writeDocument(new JSONAPIDocument<>(member)));
-        eventSenderService.prepareAndSendEvent("", message, rabbitmqProperties.getIncomingUiQueueName(),
+        eventSenderService.prepareAndSendEvent("", message, rmqProperties.getIncomingUiQueueName(),
                 MEMBER, getDefaultHeaders(memberId));
     }
 
@@ -207,11 +221,11 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
         return ImmutableMap.of("user_id", defaultId);
     }
 
-    private void sendLobbyCreationEvent(Long duration) throws DocumentSerializationException {
+    private void sendLobbyEvent(Long duration, String type) throws DocumentSerializationException {
         Lobby lobby = getLobby(duration);
         String message = new String(converter.writeDocument(new JSONAPIDocument<>(lobby)));
-        eventSenderService.prepareAndSendEvent("", message, rabbitmqProperties.getIncomingTournamentsQueueName(),
-                LOBBY_CREATE_REQUEST, new HashMap<>());
+        eventSenderService.prepareAndSendEvent("", message, rmqProperties.getIncomingTournamentsQueueName(),
+                type, new HashMap<>());
     }
 
     private Lobby getLobby(Long duration) {

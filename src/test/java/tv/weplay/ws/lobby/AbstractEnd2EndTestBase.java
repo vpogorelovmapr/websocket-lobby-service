@@ -20,7 +20,7 @@ public class AbstractEnd2EndTestBase {
     private SchedulerService schedulerService;
 
     @Autowired
-    protected RabbitmqProperties rabbitmqProperties;
+    protected RabbitmqProperties rmqProperties;
 
     @Autowired
     protected LobbyService lobbyService;
@@ -31,10 +31,10 @@ public class AbstractEnd2EndTestBase {
     @After
     public void after() {
         lobbyService.deleteAll();
-        admin.purgeQueue(rabbitmqProperties.getOutcomingUiQueueName(), true);
-        admin.purgeQueue(rabbitmqProperties.getOutcomingTournamentsQueueName(), true);
-        admin.purgeQueue(rabbitmqProperties.getOutcomingPrivateQueueName(), true);
-        admin.purgeQueue(rabbitmqProperties.getDeadLetterQueueName(), true);
+        admin.purgeQueue(rmqProperties.getOutcomingUiQueueName(), true);
+        admin.purgeQueue(rmqProperties.getOutcomingTournamentsQueueName(), true);
+        admin.purgeQueue(rmqProperties.getOutcomingPrivateQueueName(), true);
+        admin.purgeQueue(rmqProperties.getDeadLetterQueueName(), true);
         schedulerService.clear();
     }
 
