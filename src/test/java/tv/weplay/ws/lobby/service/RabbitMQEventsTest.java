@@ -61,8 +61,8 @@ public class RabbitMQEventsTest extends AbstractEnd2EndTestBase {
         sendLobbyEvent(120L, LOBBY_RESTART);
 
         // Check that lobby service receive lobby restart event
-        checkLobbyStatusEvent(rmqProperties.getOutcomingTournamentsQueueName(), UPCOMING);
-        checkLobbyStatusEvent(rmqProperties.getOutcomingPrivateQueueName(), UPCOMING);
+        checkLobbyStatusEvent(rmqProperties.getOutcomingTournamentsQueueName(), NOT_STARTED);
+        checkLobbyStatusEvent(rmqProperties.getOutcomingPrivateQueueName(), NOT_STARTED);
     }
 
     @Test
