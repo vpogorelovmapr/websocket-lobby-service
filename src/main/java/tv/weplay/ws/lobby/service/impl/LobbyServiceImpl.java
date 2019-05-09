@@ -77,11 +77,10 @@ public class LobbyServiceImpl implements LobbyService {
             delete(lobby.getId());
             schedulerService.unschedule(LOBBY_PREFIX + lobby.getId(), MATCH_START_GROUP);
             schedulerService.unschedule(VOTE_PREFIX + lobby.getId(), VOTE_GROUP);
-
-            LobbyEntity entity = existing.get();
-            Lobby event = buildLobbyEvent(lobbyMapper.toDTO(entity));
-            publishEventToRMQ(event, lobby.getId().toString(), EventTypes.LOBBY_RESTART);
         }
+        LobbyEntity entity = existing.get();
+        Lobby event = buildLobbyEvent(lobbyMapper.toDTO(entity));
+        publishEventToRMQ(event, lobby.getId().toString(), EventTypes.LOBBY_RESTART);
         return create(lobby);
     }
 
