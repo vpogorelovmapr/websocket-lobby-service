@@ -10,6 +10,8 @@ public interface LobbyService {
     @NewSpan
     Lobby create(@SpanTag("lobby") Lobby lobby);
     @NewSpan
+    Lobby restart(@SpanTag("lobby") Lobby lobby);
+    @NewSpan
     Lobby update(@SpanTag("lobby") Lobby lobby);
     @NewSpan
     void delete(@SpanTag("id") Long id);

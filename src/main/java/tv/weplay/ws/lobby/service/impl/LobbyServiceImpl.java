@@ -60,13 +60,28 @@ public class LobbyServiceImpl implements LobbyService {
         Lobby created = lobbyMapper.toDTO(createdEntity);
         log.info("Created lobby {}", created);
 
-        Lobby event = buildLobbyCreatedEvent(created);
+        Lobby event = buildLobbyEvent(created);
         String routingKey = buildInvitesRoutingKey(lobby);
         publishInvitesToRMQ(event, routingKey);
 
         scheduleLobbyStartJob(created);
 
         return created;
+    }
+
+    @Override
+    public Lobby restart(Lobby lobby) {
+        Optional<LobbyEntity> existing = lobbyRepository.findById(lobby.getId());
+
+        if (existing.isPresent()) {
+            delete(lobby.getId());
+            schedulerService.unschedule(LOBBY_PREFIX + lobby.getId(), MATCH_START_GROUP);
+            schedulerService.unschedule(VOTE_PREFIX + lobby.getId(), VOTE_GROUP);
+        }
+        LobbyEntity entity = lobbyMapper.toEntity(lobby);
+        Lobby event = buildLobbyEvent(lobbyMapper.toDTO(entity));
+        publishEventToRMQ(event, lobby.getId().toString(), EventTypes.LOBBY_RESTART);
+        return create(lobby);
     }
 
     @Override
@@ -319,7 +334,7 @@ public class LobbyServiceImpl implements LobbyService {
                 .build();
     }
 
-    private Lobby buildLobbyCreatedEvent(Lobby lobby) {
+    private Lobby buildLobbyEvent(Lobby lobby) {
         return Lobby.builder()
                 .id(lobby.getId())
                 .startDatetime(lobby.getStartDatetime())
