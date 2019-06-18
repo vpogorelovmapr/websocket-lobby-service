@@ -186,6 +186,14 @@ public class LobbyServiceImpl implements LobbyService {
             sendErrorNotification(lobbyId, ErrorType.LOBBY_NOT_EXIST, Optional.empty());
             return;
         }
+        boolean isMatchPlayer = lobby.getMatch().getMembers().stream()
+                .map(MatchMember::getId)
+                .anyMatch(id -> id.equals(memberUpdate.getId()));
+        if (!isMatchPlayer) {
+            log.error("Match member with id {} doesn't belong to lobby: {}",
+                    memberUpdate.getId(), lobby.getId());
+            return;
+        }
         validateMatchMemberEvent(lobby, memberUpdate);
         Optional<MatchMember> matchMember = lobby.getMatch().getMembers().stream()
                 .filter(member -> member.getId().equals(memberUpdate.getId()))
