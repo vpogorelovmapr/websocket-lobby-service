@@ -26,7 +26,7 @@
         <guava.version>27.0.1-jre</guava.version>
         <jsonapi-converter.version>0.9</jsonapi-converter.version>
         <mockito.version>2.0.2-beta</mockito.version>
-        <mysql-connector-java.version>5.1.47</mysql-connector-java.version>
+        <mysql-connector-java.version>8.0.16</mysql-connector-java.version>
         <p6spy.version>3.8.1</p6spy.version>
         <brave-instrumentation.version>5.6.1</brave-instrumentation.version>
     </properties>
